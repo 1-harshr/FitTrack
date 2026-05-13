@@ -21,3 +21,6 @@ google-services.json
 
 # Firebase generated files
 .google_services/
+
+iosApp/Pods/
+*.plist
