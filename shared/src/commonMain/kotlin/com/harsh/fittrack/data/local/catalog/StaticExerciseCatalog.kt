@@ -1,18 +1,402 @@
 package com.harsh.fittrack.data.local.catalog
 
+import com.harsh.fittrack.domain.model.Equipment
 import com.harsh.fittrack.domain.model.Exercise
+import com.harsh.fittrack.domain.model.MovementType
 import com.harsh.fittrack.domain.model.MuscleGroup
 import com.harsh.fittrack.domain.repository.ExerciseCatalog
 
-/**
- * In-memory implementation of the static exercise catalog.
- *
- * TODO: seed with the 50+ exercises required by the PRD covering CHEST, BACK, LEGS,
- * SHOULDERS, ARMS, CORE, GLUTES, CALVES across BARBELL/DUMBBELL/CABLE/MACHINE/
- * BODYWEIGHT/KETTLEBELL/BAND equipment.
- */
 class StaticExerciseCatalog : ExerciseCatalog {
-    private val exercises: List<Exercise> = emptyList() // TODO: populate
+
+    private val exercises: List<Exercise> = listOf(
+        // ── Chest ────────────────────────────────────────────────────────
+        Exercise(
+            id = "bench_press",
+            name = "Bench Press",
+            primaryMuscle = MuscleGroup.CHEST,
+            secondaryMuscles = listOf(MuscleGroup.ARMS, MuscleGroup.SHOULDERS),
+            equipment = Equipment.BARBELL,
+            movementType = MovementType.COMPOUND,
+            instructions = listOf(
+                "Lie flat on a bench, feet firmly planted on the floor.",
+                "Grip the bar slightly wider than shoulder-width, unrack and hold it above your chest.",
+                "Inhale and lower the bar to your mid-chest in a controlled arc.",
+                "Press the bar back up explosively, exhaling at the top. Keep your back slightly arched.",
+            ),
+        ),
+        Exercise(
+            id = "incline_db_press",
+            name = "Incline Dumbbell Press",
+            primaryMuscle = MuscleGroup.CHEST,
+            secondaryMuscles = listOf(MuscleGroup.SHOULDERS, MuscleGroup.ARMS),
+            equipment = Equipment.DUMBBELL,
+            movementType = MovementType.COMPOUND,
+            instructions = listOf(
+                "Set the bench to 30–45°. Sit with a dumbbell on each knee.",
+                "Kick the dumbbells up and press them above your upper chest.",
+                "Lower slowly until your elbows are at 90°, feeling a stretch.",
+                "Drive the dumbbells back up and squeeze at the top.",
+            ),
+        ),
+        Exercise(
+            id = "cable_flye",
+            name = "Cable Flye",
+            primaryMuscle = MuscleGroup.CHEST,
+            secondaryMuscles = emptyList(),
+            equipment = Equipment.CABLE,
+            movementType = MovementType.ISOLATION,
+            instructions = listOf(
+                "Set both pulleys at shoulder height. Stand in the centre, one foot forward.",
+                "Grab the handles with a slight bend in your elbows.",
+                "Bring your hands together in a wide hugging arc, keeping elbows fixed.",
+                "Return slowly under control and repeat.",
+            ),
+        ),
+        Exercise(
+            id = "push_up",
+            name = "Push-Up",
+            primaryMuscle = MuscleGroup.CHEST,
+            secondaryMuscles = listOf(MuscleGroup.ARMS, MuscleGroup.CORE),
+            equipment = Equipment.BODYWEIGHT,
+            movementType = MovementType.COMPOUND,
+            instructions = listOf(
+                "Place hands slightly wider than shoulder-width, body in a straight line.",
+                "Lower your chest to just above the floor, elbows at ~45°.",
+                "Push through your palms to return to the start.",
+                "Keep your core braced throughout the movement.",
+            ),
+        ),
+        // ── Back ─────────────────────────────────────────────────────────
+        Exercise(
+            id = "deadlift",
+            name = "Deadlift",
+            primaryMuscle = MuscleGroup.BACK,
+            secondaryMuscles = listOf(MuscleGroup.LEGS, MuscleGroup.GLUTES),
+            equipment = Equipment.BARBELL,
+            movementType = MovementType.COMPOUND,
+            instructions = listOf(
+                "Stand with feet hip-width, bar over mid-foot. Hinge at the hips and grip the bar.",
+                "Brace your core, take a deep breath and drive your feet into the floor.",
+                "Keep the bar close to your body as you extend your hips and knees simultaneously.",
+                "Lock out at the top, then lower the bar under control by hinging at the hips first.",
+            ),
+        ),
+        Exercise(
+            id = "pull_up",
+            name = "Pull-Up",
+            primaryMuscle = MuscleGroup.BACK,
+            secondaryMuscles = listOf(MuscleGroup.ARMS),
+            equipment = Equipment.BODYWEIGHT,
+            movementType = MovementType.COMPOUND,
+            instructions = listOf(
+                "Hang from the bar with an overhand grip, hands shoulder-width apart.",
+                "Engage your lats and pull your chest toward the bar.",
+                "Pause briefly at the top, then lower with control.",
+                "Avoid swinging — use a slow eccentric for maximum muscle engagement.",
+            ),
+        ),
+        Exercise(
+            id = "barbell_row",
+            name = "Barbell Row",
+            primaryMuscle = MuscleGroup.BACK,
+            secondaryMuscles = listOf(MuscleGroup.ARMS),
+            equipment = Equipment.BARBELL,
+            movementType = MovementType.COMPOUND,
+            instructions = listOf(
+                "Hinge forward ~45°, grip the bar slightly wider than shoulder-width.",
+                "Row the bar toward your lower chest, leading with your elbows.",
+                "Squeeze your shoulder blades at the top.",
+                "Lower the bar slowly, maintaining your hip hinge.",
+            ),
+        ),
+        Exercise(
+            id = "lat_pulldown",
+            name = "Lat Pulldown",
+            primaryMuscle = MuscleGroup.BACK,
+            secondaryMuscles = listOf(MuscleGroup.ARMS),
+            equipment = Equipment.CABLE,
+            movementType = MovementType.COMPOUND,
+            instructions = listOf(
+                "Sit at the cable machine, secure your thighs under the pad.",
+                "Grip the bar wider than shoulder-width, lean back slightly.",
+                "Pull the bar down to your upper chest, driving elbows toward your hips.",
+                "Return slowly, fully extending your arms at the top.",
+            ),
+        ),
+        Exercise(
+            id = "cable_row",
+            name = "Cable Row",
+            primaryMuscle = MuscleGroup.BACK,
+            secondaryMuscles = listOf(MuscleGroup.ARMS),
+            equipment = Equipment.CABLE,
+            movementType = MovementType.COMPOUND,
+            instructions = listOf(
+                "Sit at a low cable pulley, feet on the platform, slight bend in knees.",
+                "Grip the handle and pull toward your lower abdomen.",
+                "Keep your torso upright and squeeze your shoulder blades.",
+                "Extend your arms fully on the return, feeling the stretch.",
+            ),
+        ),
+        // ── Legs ─────────────────────────────────────────────────────────
+        Exercise(
+            id = "squat",
+            name = "Squat",
+            primaryMuscle = MuscleGroup.LEGS,
+            secondaryMuscles = listOf(MuscleGroup.GLUTES, MuscleGroup.CORE),
+            equipment = Equipment.BARBELL,
+            movementType = MovementType.COMPOUND,
+            instructions = listOf(
+                "Position the bar on your upper traps, feet shoulder-width, toes slightly out.",
+                "Brace your core, take a breath, and descend by sitting back and down.",
+                "Keep your chest up and knees tracking over your toes.",
+                "Drive through your heels to stand, exhaling at the top.",
+            ),
+        ),
+        Exercise(
+            id = "romanian_deadlift",
+            name = "Romanian Deadlift",
+            primaryMuscle = MuscleGroup.LEGS,
+            secondaryMuscles = listOf(MuscleGroup.GLUTES, MuscleGroup.BACK),
+            equipment = Equipment.BARBELL,
+            movementType = MovementType.COMPOUND,
+            instructions = listOf(
+                "Hold the bar at hip level with an overhand grip, slight bend in knees.",
+                "Push your hips back as you lower the bar along your legs.",
+                "Feel a deep hamstring stretch, keeping your back straight.",
+                "Drive your hips forward to return to standing.",
+            ),
+        ),
+        Exercise(
+            id = "leg_press",
+            name = "Leg Press",
+            primaryMuscle = MuscleGroup.LEGS,
+            secondaryMuscles = listOf(MuscleGroup.GLUTES),
+            equipment = Equipment.MACHINE,
+            movementType = MovementType.COMPOUND,
+            instructions = listOf(
+                "Sit in the leg press machine, feet shoulder-width on the platform.",
+                "Release the safety handles and lower the weight until knees reach 90°.",
+                "Press through your heels to extend your legs, without locking out.",
+                "Keep your lower back flat against the seat throughout.",
+            ),
+        ),
+        Exercise(
+            id = "lunges",
+            name = "Dumbbell Lunges",
+            primaryMuscle = MuscleGroup.LEGS,
+            secondaryMuscles = listOf(MuscleGroup.GLUTES),
+            equipment = Equipment.DUMBBELL,
+            movementType = MovementType.COMPOUND,
+            instructions = listOf(
+                "Hold a dumbbell in each hand, stand tall.",
+                "Step one foot forward and lower your back knee toward the floor.",
+                "Keep your front knee over your ankle, torso upright.",
+                "Push back to standing and alternate legs.",
+            ),
+        ),
+        Exercise(
+            id = "leg_curl",
+            name = "Leg Curl",
+            primaryMuscle = MuscleGroup.LEGS,
+            secondaryMuscles = emptyList(),
+            equipment = Equipment.MACHINE,
+            movementType = MovementType.ISOLATION,
+            instructions = listOf(
+                "Lie face-down on the leg curl machine, ankles under the pad.",
+                "Curl your heels toward your glutes as far as possible.",
+                "Hold briefly at the top, then lower with control.",
+                "Avoid lifting your hips off the bench.",
+            ),
+        ),
+        // ── Shoulders ────────────────────────────────────────────────────
+        Exercise(
+            id = "overhead_press",
+            name = "Overhead Press",
+            primaryMuscle = MuscleGroup.SHOULDERS,
+            secondaryMuscles = listOf(MuscleGroup.ARMS, MuscleGroup.CORE),
+            equipment = Equipment.BARBELL,
+            movementType = MovementType.COMPOUND,
+            instructions = listOf(
+                "Grip the bar just outside shoulder-width, bar resting on your upper chest.",
+                "Brace your core and press the bar directly overhead.",
+                "Lock out at the top with your arms fully extended.",
+                "Lower the bar back to your chest under control.",
+            ),
+        ),
+        Exercise(
+            id = "lateral_raise",
+            name = "Lateral Raise",
+            primaryMuscle = MuscleGroup.SHOULDERS,
+            secondaryMuscles = emptyList(),
+            equipment = Equipment.DUMBBELL,
+            movementType = MovementType.ISOLATION,
+            instructions = listOf(
+                "Stand with a dumbbell in each hand, slight bend in elbows.",
+                "Raise your arms out to the sides until they reach shoulder height.",
+                "Lead with your pinkies, as if pouring water from a jug.",
+                "Lower slowly under control — resist the urge to swing.",
+            ),
+        ),
+        // ── Arms ─────────────────────────────────────────────────────────
+        Exercise(
+            id = "bicep_curl",
+            name = "Bicep Curl",
+            primaryMuscle = MuscleGroup.ARMS,
+            secondaryMuscles = emptyList(),
+            equipment = Equipment.DUMBBELL,
+            movementType = MovementType.ISOLATION,
+            instructions = listOf(
+                "Stand tall, a dumbbell in each hand, palms facing forward.",
+                "Curl the weights toward your shoulders, keeping elbows fixed.",
+                "Squeeze your biceps at the top.",
+                "Lower slowly for a full stretch at the bottom.",
+            ),
+        ),
+        Exercise(
+            id = "tricep_pushdown",
+            name = "Tricep Pushdown",
+            primaryMuscle = MuscleGroup.ARMS,
+            secondaryMuscles = emptyList(),
+            equipment = Equipment.CABLE,
+            movementType = MovementType.ISOLATION,
+            instructions = listOf(
+                "Stand at a high cable pulley, grip the bar overhand.",
+                "Keep elbows tucked at your sides and push the bar down until arms are straight.",
+                "Squeeze your triceps hard at full extension.",
+                "Return slowly, bending the elbows to about 90°.",
+            ),
+        ),
+        Exercise(
+            id = "hammer_curl",
+            name = "Hammer Curl",
+            primaryMuscle = MuscleGroup.ARMS,
+            secondaryMuscles = emptyList(),
+            equipment = Equipment.DUMBBELL,
+            movementType = MovementType.ISOLATION,
+            instructions = listOf(
+                "Hold dumbbells with a neutral grip (palms facing each other).",
+                "Curl both dumbbells toward your shoulders simultaneously.",
+                "Avoid rotating your wrists — keep the neutral grip throughout.",
+                "Lower under control.",
+            ),
+        ),
+        Exercise(
+            id = "skull_crusher",
+            name = "Skull Crusher",
+            primaryMuscle = MuscleGroup.ARMS,
+            secondaryMuscles = emptyList(),
+            equipment = Equipment.BARBELL,
+            movementType = MovementType.ISOLATION,
+            instructions = listOf(
+                "Lie on a bench and hold the barbell above your chest, arms extended.",
+                "Bend only at the elbows, lowering the bar toward your forehead.",
+                "Extend back up without moving your upper arms.",
+                "Keep control — don't rush this movement.",
+            ),
+        ),
+        // ── Core ─────────────────────────────────────────────────────────
+        Exercise(
+            id = "plank",
+            name = "Plank",
+            primaryMuscle = MuscleGroup.CORE,
+            secondaryMuscles = listOf(MuscleGroup.SHOULDERS),
+            equipment = Equipment.BODYWEIGHT,
+            movementType = MovementType.ISOLATION,
+            instructions = listOf(
+                "Place your forearms on the floor, elbows under shoulders.",
+                "Extend your legs behind you, weight on your toes.",
+                "Keep your body in a straight line from head to heels.",
+                "Hold, breathing steadily — avoid letting your hips sag or rise.",
+            ),
+        ),
+        Exercise(
+            id = "russian_twist",
+            name = "Russian Twist",
+            primaryMuscle = MuscleGroup.CORE,
+            secondaryMuscles = emptyList(),
+            equipment = Equipment.BODYWEIGHT,
+            movementType = MovementType.ISOLATION,
+            instructions = listOf(
+                "Sit on the floor, knees bent, feet slightly raised.",
+                "Lean back to ~45° and clasp your hands together.",
+                "Rotate your torso left and right, tapping the floor beside each hip.",
+                "Keep your core tight and movement controlled.",
+            ),
+        ),
+        // ── Glutes ───────────────────────────────────────────────────────
+        Exercise(
+            id = "hip_thrust",
+            name = "Hip Thrust",
+            primaryMuscle = MuscleGroup.GLUTES,
+            secondaryMuscles = listOf(MuscleGroup.LEGS),
+            equipment = Equipment.BARBELL,
+            movementType = MovementType.COMPOUND,
+            instructions = listOf(
+                "Sit against a bench, bar over your hips, feet flat on the floor.",
+                "Drive through your heels to lift your hips until your body is parallel to the floor.",
+                "Squeeze your glutes hard at the top.",
+                "Lower your hips slowly back toward the floor.",
+            ),
+        ),
+        Exercise(
+            id = "glute_bridge",
+            name = "Glute Bridge",
+            primaryMuscle = MuscleGroup.GLUTES,
+            secondaryMuscles = listOf(MuscleGroup.CORE),
+            equipment = Equipment.BODYWEIGHT,
+            movementType = MovementType.COMPOUND,
+            instructions = listOf(
+                "Lie on your back, knees bent, feet flat on the floor near your hips.",
+                "Drive through your heels, squeezing your glutes to lift your hips.",
+                "Pause at the top, then lower slowly.",
+                "Add a resistance band above the knees for extra challenge.",
+            ),
+        ),
+        // ── Calves ───────────────────────────────────────────────────────
+        Exercise(
+            id = "calf_raise",
+            name = "Calf Raise",
+            primaryMuscle = MuscleGroup.CALVES,
+            secondaryMuscles = emptyList(),
+            equipment = Equipment.MACHINE,
+            movementType = MovementType.ISOLATION,
+            instructions = listOf(
+                "Position your shoulders under the pads, feet on the edge of the platform.",
+                "Rise up onto the balls of your feet as high as possible.",
+                "Hold briefly at the top, then lower your heels below the platform level.",
+                "Control the negative for maximum stretch.",
+            ),
+        ),
+        // ── Cardio ───────────────────────────────────────────────────────
+        Exercise(
+            id = "treadmill_run",
+            name = "Treadmill Run",
+            primaryMuscle = MuscleGroup.LEGS,
+            secondaryMuscles = listOf(MuscleGroup.CALVES),
+            equipment = Equipment.MACHINE,
+            movementType = MovementType.CARDIO,
+            instructions = listOf(
+                "Set your target speed and incline on the treadmill.",
+                "Land mid-foot with each stride, keeping an upright posture.",
+                "Swing your arms naturally to maintain rhythm.",
+                "Cool down by gradually reducing speed over the final 2 minutes.",
+            ),
+        ),
+        Exercise(
+            id = "jump_rope",
+            name = "Jump Rope",
+            primaryMuscle = MuscleGroup.CALVES,
+            secondaryMuscles = listOf(MuscleGroup.LEGS, MuscleGroup.SHOULDERS),
+            equipment = Equipment.BODYWEIGHT,
+            movementType = MovementType.CARDIO,
+            instructions = listOf(
+                "Hold the handles at hip height, rope behind your feet.",
+                "Jump just high enough to clear the rope — minimal ground contact time.",
+                "Keep your elbows close to your sides, wrists doing the rotation.",
+                "Land softly on the balls of your feet with slightly bent knees.",
+            ),
+        ),
+    )
 
     override fun all(): List<Exercise> = exercises
 

@@ -14,6 +14,22 @@ class ExercisesViewModel(
     private val _state = MutableStateFlow(ExercisesState(results = catalog.all()))
     val state: StateFlow<ExercisesState> = _state.asStateFlow()
 
-    fun setQuery(query: String) { /* TODO */ }
-    fun setMuscleGroup(group: MuscleGroup?) { /* TODO */ }
+    val strengthCount: Int = catalog.all().count { it.movementType.name != "CARDIO" }
+    val cardioCount: Int = catalog.all().count { it.movementType.name == "CARDIO" }
+
+    fun setQuery(query: String) {
+        val group = _state.value.activeMuscleGroup
+        _state.value = _state.value.copy(
+            query = query,
+            results = catalog.search(query, group),
+        )
+    }
+
+    fun setMuscleGroup(group: MuscleGroup?) {
+        val query = _state.value.query
+        _state.value = _state.value.copy(
+            activeMuscleGroup = group,
+            results = catalog.search(query, group),
+        )
+    }
 }

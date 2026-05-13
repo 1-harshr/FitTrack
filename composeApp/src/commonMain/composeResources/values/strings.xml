@@ -18,5 +18,83 @@
     <string name="stat_workouts">WORKOUTS</string>
     <string name="stat_this_week">THIS WEEK</string>
     <string name="stat_streak">STREAK</string>
+    <string name="stat_days">DAYS</string>
+    <string name="stat_completed">COMPLETED</string>
+
+    <!-- Home screen -->
+    <string name="home_recent_workouts">RECENT WORKOUTS</string>
+    <string name="home_see_all">SEE ALL</string>
+    <string name="home_start_workout">START WORKOUT</string>
+    <string name="home_empty_title">No workouts yet</string>
+    <string name="home_empty_subtitle">Hit Record to log your first session</string>
+
+    <!-- Exercise library -->
+    <string name="exercises_title">Exercises</string>
+    <string name="exercises_search_hint">Search exercises…</string>
+    <string name="exercises_filter_all">ALL</string>
+    <string name="exercises_training_focus">TRAINING FOCUS</string>
+    <string name="exercises_strength">Strength</string>
+    <string name="exercises_cardio">Cardio</string>
+    <string name="exercises_count_suffix">exercises</string>
+
+    <!-- Exercise detail -->
+    <string name="exercise_add_to_workout">ADD TO WORKOUT</string>
+    <string name="exercise_primary_muscle">Primary</string>
+    <string name="exercise_secondary_muscles">Secondary</string>
+    <string name="exercise_equipment">Equipment</string>
+    <string name="exercise_movement">Movement</string>
+    <string name="exercise_instructions">INSTRUCTIONS</string>
+
+    <!-- Workout detail -->
+    <string name="workout_detail_duration">Duration</string>
+    <string name="workout_detail_volume">Volume</string>
+    <string name="workout_detail_exercises">EXERCISES</string>
+    <string name="workout_detail_set">set</string>
+    <string name="workout_detail_reps">reps</string>
+    <string name="workout_detail_empty">No exercises recorded for this workout.</string>
+
+    <!-- Profile screen -->
+    <string name="profile_title">Profile</string>
+    <string name="profile_welcome_back">Welcome back,</string>
+    <string name="profile_settings_units">Units</string>
+    <string name="profile_settings_notifications">Notifications</string>
+    <string name="profile_settings_security">Security &amp; Privacy</string>
+    <string name="profile_sign_out">Sign Out</string>
+    <string name="profile_stat_sessions">SESSIONS</string>
+    <string name="profile_stat_streak">STREAK</string>
+    <string name="profile_stat_lifted">TOTAL LIFTED</string>
+    <string name="profile_this_month">this month</string>
+    <string name="profile_banner_cta">PUSH YOUR LIMITS TODAY</string>
+    <string name="profile_sign_out_confirm_title">Sign out?</string>
+    <string name="profile_sign_out_confirm_body">You will need to sign in again to access your workouts.</string>
+    <string name="profile_sign_out_confirm_action">Sign Out</string>
+    <string name="profile_cancel">Cancel</string>
+
+    <!-- Record workout screen -->
+    <string name="record_title_hint">Workout Title</string>
+    <string name="record_add_exercise">+ ADD EXERCISE</string>
+    <string name="record_finish">FINISH</string>
+    <string name="record_discard">Discard</string>
+    <string name="record_discard_confirm_title">Discard workout?</string>
+    <string name="record_discard_confirm_body">All recorded sets will be lost.</string>
+    <string name="record_discard_confirm_action">Discard</string>
+    <string name="record_cancel">Cancel</string>
+    <string name="record_add_set">+ Add Set</string>
+    <string name="record_set_col">SET</string>
+    <string name="record_kg_col">KG</string>
+    <string name="record_reps_col">REPS</string>
+    <string name="record_empty_title">No exercises yet</string>
+    <string name="record_empty_subtitle">Tap "Add Exercise" to get started</string>
+
+    <!-- Workout complete screen -->
+    <string name="complete_headline">Workout Done!</string>
+    <string name="complete_sub">Great work — keep the momentum going.</string>
+    <string name="complete_cta">BACK TO HOME</string>
+
+    <!-- Nav tabs -->
+    <string name="nav_home">Home</string>
+    <string name="nav_record">Record</string>
+    <string name="nav_exercises">Exercises</string>
+    <string name="nav_profile">Profile</string>
 
 </resources>

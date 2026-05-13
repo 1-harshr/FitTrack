@@ -12,7 +12,20 @@
       "mcp__stitch__list_screens",
       "mcp__stitch__get_screen",
       "WebFetch(domain:contribution.usercontent.google.com)",
-      "Bash(./gradlew :shared:compileDebugKotlinAndroid :composeApp:compileDebugKotlinAndroid)"
+      "Bash(./gradlew :shared:compileDebugKotlinAndroid :composeApp:compileDebugKotlinAndroid)",
+      "Bash(./gradlew :composeApp:compileKotlinIosSimulatorArm64)",
+      "Bash(./gradlew :shared:compileKotlinIosSimulatorArm64)",
+      "Bash(./gradlew :composeApp:compileDebugKotlinAndroid :shared:compileDebugKotlinAndroid)",
+      "Bash(pod --version)",
+      "Bash(gem list *)",
+      "Read(//usr/local/bin/**)",
+      "Read(//Users/harshranjan/.gem/bin/**)",
+      "Bash(ruby --version)",
+      "Bash(brew list *)",
+      "Read(//opt/homebrew/bin/**)",
+      "Bash(brew --version)",
+      "Bash(brew install *)",
+      "Bash(/opt/homebrew/bin/pod install *)"
     ]
   }
 }

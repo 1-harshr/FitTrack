@@ -13,5 +13,7 @@ object DurationFormatter {
         }
     }
 
+    fun minutes(totalSeconds: Long): String = "${totalSeconds / 60} min"
+
     private fun Long.pad2(): String = if (this < 10) "0$this" else toString()
 }

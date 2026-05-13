@@ -16,8 +16,10 @@ import com.harsh.fittrack.domain.repository.WorkoutRepository
 import com.harsh.fittrack.feature.auth.AuthViewModel
 import com.harsh.fittrack.feature.exercises.ExercisesViewModel
 import com.harsh.fittrack.feature.home.HomeViewModel
+import com.harsh.fittrack.feature.home.WorkoutDetailViewModel
 import com.harsh.fittrack.feature.profile.ProfileViewModel
 import com.harsh.fittrack.feature.record.RecordViewModel
+import org.koin.core.parameter.parametersOf
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.auth.FirebaseAuth
 import dev.gitlive.firebase.auth.auth
@@ -50,8 +52,9 @@ val sharedModule: Module = module {
 
     // --- view models ---
     factory { AuthViewModel(authRepository = get()) }
-    factory { HomeViewModel(userRepository = get(), workoutRepository = get()) }
+    factory { HomeViewModel(userRepository = get(), workoutRepository = get(), greetingProvider = get(), clock = get()) }
     factory { RecordViewModel(workoutRepository = get()) }
     factory { ExercisesViewModel(catalog = get()) }
-    factory { ProfileViewModel(userRepository = get(), workoutRepository = get(), authRepository = get()) }
+    factory { (workoutId: String) -> WorkoutDetailViewModel(workoutId = workoutId, workoutRepository = get()) }
+    factory { ProfileViewModel(userRepository = get(), workoutRepository = get(), authRepository = get(), clock = get()) }
 }

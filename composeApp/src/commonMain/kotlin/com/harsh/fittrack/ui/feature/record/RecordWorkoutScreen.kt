@@ -1,16 +1,534 @@
 package com.harsh.fittrack.ui.feature.record
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.harsh.fittrack.core.util.DurationFormatter
+import com.harsh.fittrack.domain.model.SetEntry
+import com.harsh.fittrack.domain.repository.ExerciseWithSets
+import com.harsh.fittrack.feature.record.RecordViewModel
+import com.harsh.fittrack.resources.Res
+import com.harsh.fittrack.resources.record_add_exercise
+import com.harsh.fittrack.resources.record_add_set
+import com.harsh.fittrack.resources.record_cancel
+import com.harsh.fittrack.resources.record_discard
+import com.harsh.fittrack.resources.record_discard_confirm_action
+import com.harsh.fittrack.resources.record_discard_confirm_body
+import com.harsh.fittrack.resources.record_discard_confirm_title
+import com.harsh.fittrack.resources.record_finish
+import com.harsh.fittrack.resources.record_kg_col
+import com.harsh.fittrack.resources.record_reps_col
+import com.harsh.fittrack.resources.record_set_col
+import com.harsh.fittrack.resources.record_title_hint
+import com.harsh.fittrack.ui.theme.FitTrackTheme
+import com.harsh.fittrack.ui.theme.SurfaceContainerHigh
+import com.harsh.fittrack.ui.theme.SurfaceContainerHighest
+import kotlinx.coroutines.delay
+import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.viewmodel.koinViewModel
 
-/**
- * Active workout. Live timer, editable title, exercise sections with inline set rows,
- * "+ add exercise" opens [AddExerciseSheet], "Finish workout" navigates to complete.
- */
 @Composable
 fun RecordWorkoutScreen(
-    onOpenAddExercise: () -> Unit,
-    onOpenExerciseDetailFromSheet: (exerciseId: String) -> Unit,
-    onFinish: () -> Unit,
+    onFinished: () -> Unit,
+    onDiscard: () -> Unit,
 ) {
-    // TODO
+    val vm: RecordViewModel = koinViewModel()
+    val state by vm.state.collectAsStateWithLifecycle()
+
+    var elapsed by remember { mutableStateOf(0L) }
+    var showDiscardDialog by remember { mutableStateOf(false) }
+
+    // Local timer — ticks every second while recording
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(1000)
+            elapsed++
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(FitTrackTheme.colors.surface),
+    ) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .systemBarsPadding(),
+            contentPadding = PaddingValues(bottom = 120.dp),
+        ) {
+            // ── Top bar ───────────────────────────────────────────────
+            item {
+                RecordTopBar(
+                    title = state.title,
+                    elapsed = elapsed,
+                    onTitleChange = { vm.renameTitle(it) },
+                    onDiscard = { showDiscardDialog = true },
+                    modifier = Modifier
+                        .padding(horizontal = FitTrackTheme.spacing.containerMargin)
+                        .padding(top = FitTrackTheme.spacing.md, bottom = FitTrackTheme.spacing.md),
+                )
+            }
+
+            // ── Exercise sections ─────────────────────────────────────
+            if (state.exercises.isEmpty()) {
+                item {
+                    RecordEmptyState(
+                        modifier = Modifier
+                            .padding(horizontal = FitTrackTheme.spacing.containerMargin)
+                            .padding(top = FitTrackTheme.spacing.xl),
+                    )
+                }
+            } else {
+                items(state.exercises, key = { it.entry.id }) { exerciseWithSets ->
+                    RecordExerciseSection(
+                        exerciseWithSets = exerciseWithSets,
+                        onAddSet = { vm.addSet(exerciseWithSets.entry.id) },
+                        onUpdateSet = { vm.updateSet(it) },
+                        modifier = Modifier
+                            .padding(horizontal = FitTrackTheme.spacing.containerMargin)
+                            .padding(bottom = FitTrackTheme.spacing.sm),
+                    )
+                }
+            }
+
+            // ── Add Exercise button ───────────────────────────────────
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = FitTrackTheme.spacing.containerMargin)
+                        .padding(top = FitTrackTheme.spacing.md)
+                        .height(48.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(SurfaceContainerHigh)
+                        .clickable { /* TODO: open exercise picker */ },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = stringResource(Res.string.record_add_exercise),
+                        style = FitTrackTheme.typography.labelLarge,
+                        color = FitTrackTheme.colors.primary,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+            }
+        }
+
+        // ── Finish button (sticky bottom) ─────────────────────────────
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .background(FitTrackTheme.colors.surface)
+                .padding(FitTrackTheme.spacing.containerMargin)
+                .padding(bottom = FitTrackTheme.spacing.md),
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(FitTrackTheme.colors.primary)
+                    .clickable { vm.finish(); onFinished() },
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = stringResource(Res.string.record_finish),
+                    style = FitTrackTheme.typography.labelLarge,
+                    color = FitTrackTheme.colors.onPrimary,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+        }
+    }
+
+    // ── Discard confirmation dialog ───────────────────────────────────
+    if (showDiscardDialog) {
+        AlertDialog(
+            onDismissRequest = { showDiscardDialog = false },
+            title = {
+                Text(
+                    text = stringResource(Res.string.record_discard_confirm_title),
+                    style = FitTrackTheme.typography.headlineSmall,
+                    color = FitTrackTheme.colors.onSurface,
+                    fontWeight = FontWeight.Bold,
+                )
+            },
+            text = {
+                Text(
+                    text = stringResource(Res.string.record_discard_confirm_body),
+                    style = FitTrackTheme.typography.bodyMedium,
+                    color = FitTrackTheme.colors.onSurfaceVariant,
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { showDiscardDialog = false; vm.discard(); onDiscard() }) {
+                    Text(
+                        text = stringResource(Res.string.record_discard_confirm_action),
+                        color = FitTrackTheme.colors.error,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDiscardDialog = false }) {
+                    Text(
+                        text = stringResource(Res.string.record_cancel),
+                        color = FitTrackTheme.colors.onSurfaceVariant,
+                    )
+                }
+            },
+            containerColor = FitTrackTheme.colors.surface,
+            shape = RoundedCornerShape(16.dp),
+        )
+    }
 }
+
+// ── Top bar ───────────────────────────────────────────────────────────────────
+
+@Composable
+private fun RecordTopBar(
+    title: String,
+    elapsed: Long,
+    onTitleChange: (String) -> Unit,
+    onDiscard: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            // Timer badge
+            Box(
+                modifier = Modifier
+                    .background(SurfaceContainerHigh, RoundedCornerShape(8.dp))
+                    .padding(horizontal = FitTrackTheme.spacing.md, vertical = 6.dp),
+            ) {
+                Text(
+                    text = DurationFormatter.hhmmss(elapsed),
+                    style = FitTrackTheme.typography.labelLarge,
+                    color = FitTrackTheme.colors.primary,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+
+            // Discard text button
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable(onClick = onDiscard)
+                    .padding(horizontal = FitTrackTheme.spacing.sm, vertical = 6.dp),
+            ) {
+                Text(
+                    text = stringResource(Res.string.record_discard),
+                    style = FitTrackTheme.typography.labelLarge,
+                    color = FitTrackTheme.colors.error,
+                )
+            }
+        }
+
+        Spacer(Modifier.height(FitTrackTheme.spacing.sm))
+
+        // Editable title
+        Box(
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            if (title.isEmpty()) {
+                Text(
+                    text = stringResource(Res.string.record_title_hint),
+                    style = FitTrackTheme.typography.headlineSmall,
+                    color = FitTrackTheme.colors.onSurfaceVariant.copy(alpha = 0.4f),
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+            BasicTextField(
+                value = title,
+                onValueChange = onTitleChange,
+                textStyle = FitTrackTheme.typography.headlineSmall.copy(
+                    color = FitTrackTheme.colors.onSurface,
+                    fontWeight = FontWeight.Bold,
+                ),
+                cursorBrush = SolidColor(FitTrackTheme.colors.primary),
+                singleLine = true,
+            )
+        }
+    }
+}
+
+// ── Exercise section ──────────────────────────────────────────────────────────
+
+@Composable
+private fun RecordExerciseSection(
+    exerciseWithSets: ExerciseWithSets,
+    onAddSet: () -> Unit,
+    onUpdateSet: (SetEntry) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(SurfaceContainerHigh, RoundedCornerShape(12.dp)),
+    ) {
+        // Exercise header
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = FitTrackTheme.spacing.md, vertical = FitTrackTheme.spacing.md),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(FitTrackTheme.spacing.sm),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .background(FitTrackTheme.colors.primary.copy(alpha = 0.15f), RoundedCornerShape(6.dp)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Box(
+                    Modifier
+                        .size(16.dp, 4.dp)
+                        .background(FitTrackTheme.colors.primary, RoundedCornerShape(2.dp))
+                )
+            }
+            Text(
+                text = exerciseWithSets.entry.exerciseId,
+                style = FitTrackTheme.typography.bodyMedium,
+                color = FitTrackTheme.colors.onSurface,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.weight(1f),
+            )
+        }
+
+        HorizontalDivider(color = FitTrackTheme.colors.outline.copy(alpha = 0.3f))
+
+        // Column headers
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = FitTrackTheme.spacing.md, vertical = FitTrackTheme.spacing.sm),
+        ) {
+            Text(
+                text = stringResource(Res.string.record_set_col),
+                style = FitTrackTheme.typography.labelSmall,
+                color = FitTrackTheme.colors.onSurfaceVariant,
+                modifier = Modifier.weight(0.8f),
+            )
+            Text(
+                text = stringResource(Res.string.record_kg_col),
+                style = FitTrackTheme.typography.labelSmall,
+                color = FitTrackTheme.colors.onSurfaceVariant,
+                modifier = Modifier.weight(1f),
+            )
+            Text(
+                text = stringResource(Res.string.record_reps_col),
+                style = FitTrackTheme.typography.labelSmall,
+                color = FitTrackTheme.colors.onSurfaceVariant,
+                modifier = Modifier.weight(1f),
+            )
+        }
+
+        // Set rows
+        exerciseWithSets.sets.forEach { set ->
+            EditableSetRow(
+                set = set,
+                onUpdate = onUpdateSet,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = FitTrackTheme.spacing.md, vertical = 4.dp),
+            )
+        }
+
+        // Add set
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onAddSet)
+                .padding(horizontal = FitTrackTheme.spacing.md, vertical = FitTrackTheme.spacing.sm),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = stringResource(Res.string.record_add_set),
+                style = FitTrackTheme.typography.labelMedium,
+                color = FitTrackTheme.colors.primary,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+    }
+}
+
+@Composable
+private fun EditableSetRow(
+    set: SetEntry,
+    onUpdate: (SetEntry) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        // Set number badge
+        Box(
+            modifier = Modifier
+                .size(24.dp)
+                .background(SurfaceContainerHighest, CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = set.setNumber.toString(),
+                style = FitTrackTheme.typography.labelSmall,
+                color = FitTrackTheme.colors.onSurfaceVariant,
+                fontWeight = FontWeight.Bold,
+            )
+        }
+        Box(Modifier.weight(0.8f))
+
+        // Weight field
+        SetInputField(
+            value = if (set.weight == 0.0) "" else formatWeight(set.weight),
+            placeholder = "0",
+            onValueChange = { raw ->
+                val kg = raw.toDoubleOrNull() ?: 0.0
+                onUpdate(set.copy(weight = kg))
+            },
+            modifier = Modifier.weight(1f),
+        )
+
+        // Reps field
+        SetInputField(
+            value = if (set.reps == 0) "" else set.reps.toString(),
+            placeholder = "0",
+            onValueChange = { raw ->
+                val reps = raw.toIntOrNull() ?: 0
+                onUpdate(set.copy(reps = reps))
+            },
+            modifier = Modifier.weight(1f),
+        )
+    }
+}
+
+@Composable
+private fun SetInputField(
+    value: String,
+    placeholder: String,
+    onValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .height(36.dp)
+            .padding(end = FitTrackTheme.spacing.sm)
+            .background(SurfaceContainerHighest, RoundedCornerShape(6.dp))
+            .padding(horizontal = FitTrackTheme.spacing.sm),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (value.isEmpty()) {
+            Text(
+                text = placeholder,
+                style = FitTrackTheme.typography.bodySmall,
+                color = FitTrackTheme.colors.onSurfaceVariant.copy(alpha = 0.4f),
+            )
+        }
+        BasicTextField(
+            value = value,
+            onValueChange = onValueChange,
+            textStyle = FitTrackTheme.typography.bodySmall.copy(
+                color = FitTrackTheme.colors.onSurface,
+                fontWeight = FontWeight.SemiBold,
+            ),
+            cursorBrush = SolidColor(FitTrackTheme.colors.primary),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            singleLine = true,
+        )
+    }
+}
+
+// ── Empty state ───────────────────────────────────────────────────────────────
+
+@Composable
+private fun RecordEmptyState(modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(FitTrackTheme.spacing.sm),
+    ) {
+        // Dumbbell placeholder
+        Box(
+            modifier = Modifier
+                .size(64.dp)
+                .background(SurfaceContainerHigh, RoundedCornerShape(16.dp)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Box(
+                    Modifier
+                        .size(36.dp, 8.dp)
+                        .background(FitTrackTheme.colors.onSurfaceVariant.copy(alpha = 0.3f), RoundedCornerShape(2.dp))
+                )
+                Box(
+                    Modifier
+                        .size(4.dp, 12.dp)
+                        .background(FitTrackTheme.colors.onSurfaceVariant.copy(alpha = 0.3f))
+                )
+                Box(
+                    Modifier
+                        .size(36.dp, 8.dp)
+                        .background(FitTrackTheme.colors.onSurfaceVariant.copy(alpha = 0.3f), RoundedCornerShape(2.dp))
+                )
+            }
+        }
+        Text(
+            text = "No exercises yet",
+            style = FitTrackTheme.typography.bodyLarge,
+            color = FitTrackTheme.colors.onSurface,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Text(
+            text = "Tap \"Add Exercise\" to get started",
+            style = FitTrackTheme.typography.bodySmall,
+            color = FitTrackTheme.colors.onSurfaceVariant,
+        )
+    }
+}
+
+private fun formatWeight(kg: Double): String =
+    if (kg % 1.0 == 0.0) "${kg.toInt()}" else "$kg"

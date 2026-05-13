@@ -9,4 +9,5 @@ data class Workout(
     val date: LocalDate,
     val durationSeconds: Long,
     val isCompleted: Boolean,
+    val totalVolumeKg: Double = 0.0,
 )

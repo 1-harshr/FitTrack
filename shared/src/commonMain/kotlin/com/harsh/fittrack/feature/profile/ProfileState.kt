@@ -8,5 +8,7 @@ data class ProfileState(
     val totalWorkouts: Int = 0,
     val streakDays: Int = 0,
     val totalVolumeKg: Double = 0.0,
+    val totalVolumeThisMonthKg: Double = 0.0,
     val units: Units = Units.KG,
+    val isLoading: Boolean = true,
 )

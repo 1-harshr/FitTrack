@@ -42,7 +42,13 @@ fun AppNav(
         }
 
         composable<Route.MainTabs> {
-            // TODO: MainTabsScaffold(navController)
+            MainTabsScaffold(
+                onSignedOut = {
+                    navController.navigate(Route.Login) {
+                        popUpTo(Route.MainTabs) { inclusive = true }
+                    }
+                },
+            )
         }
     }
 }
