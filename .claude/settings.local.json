@@ -3,7 +3,16 @@
     "allow": [
       "Bash(claude mcp *)",
       "mcp__stitch__list_projects",
-      "WebSearch"
+      "WebSearch",
+      "Bash(./gradlew :shared:compileKotlinAndroid)",
+      "Bash(./gradlew :shared:compileDebugKotlinAndroid)",
+      "Bash(./gradlew :composeApp:compileDebugKotlinAndroid)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); [print\\(c['client_info']['android_client_info']['package_name']\\) for c in d.get\\('client',[]\\)]\")",
+      "Bash(python3 -c \"import json; d=json.load\\(open\\('/Users/harshranjan/Documents/apps/FitTrack/composeApp/google-services.json'\\)\\); [print\\(c['client_info']['android_client_info']['package_name']\\) for c in d.get\\('client',[]\\)]\")",
+      "mcp__stitch__list_screens",
+      "mcp__stitch__get_screen",
+      "WebFetch(domain:contribution.usercontent.google.com)",
+      "Bash(./gradlew :shared:compileDebugKotlinAndroid :composeApp:compileDebugKotlinAndroid)"
     ]
   }
 }

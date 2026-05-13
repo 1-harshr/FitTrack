@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Post-splash app theme: pure dark window so Compose draws edge-to-edge with no flicker -->
+    <style name="Theme.FitTrack" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">#11150A</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+
+    <!--
+        Android 12+ splash screen theme.
+        - Background matches FitTrack surface (#11150A) so there is zero visual jump.
+        - Icon is the lime bolt on a lime container background (#A3E635).
+        - After the OS splash dismisses it hands off to Theme.FitTrack, which keeps
+          the same dark window background while Compose draws our custom splash.
+    -->
+    <style name="Theme.FitTrack.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#11150A</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_bolt</item>
+        <item name="windowSplashScreenIconBackgroundColor">#A3E635</item>
+        <item name="postSplashScreenTheme">@style/Theme.FitTrack</item>
+    </style>
+
+</resources>

@@ -1,0 +1,29 @@
+CREATE TABLE SetEntryEntity (
+    id              TEXT NOT NULL PRIMARY KEY,
+    exerciseEntryId TEXT NOT NULL,
+    setNumber       INTEGER NOT NULL,
+    reps            INTEGER NOT NULL,
+    weight          REAL NOT NULL,          -- always kg
+    isCompleted     INTEGER NOT NULL,       -- 0 / 1
+    FOREIGN KEY(exerciseEntryId) REFERENCES ExerciseEntryEntity(id) ON DELETE CASCADE
+);
+
+CREATE INDEX set_entry_exercise ON SetEntryEntity(exerciseEntryId, setNumber);
+
+insert:
+INSERT INTO SetEntryEntity(id, exerciseEntryId, setNumber, reps, weight, isCompleted)
+VALUES (?, ?, ?, ?, ?, ?);
+
+update:
+UPDATE SetEntryEntity
+SET reps = ?, weight = ?, isCompleted = ?
+WHERE id = ?;
+
+delete:
+DELETE FROM SetEntryEntity WHERE id = ?;
+
+selectForExerciseEntry:
+SELECT * FROM SetEntryEntity WHERE exerciseEntryId = ? ORDER BY setNumber;
+
+nextSetNumber:
+SELECT COALESCE(MAX(setNumber) + 1, 1) FROM SetEntryEntity WHERE exerciseEntryId = ?;

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- App identity -->
+    <string name="app_name">FitTrack</string>
+    <string name="app_tagline_short">track every rep</string>
+
+    <!-- Splash -->
+    <string name="splash_tagline">PEAK PERFORMANCE ENGINE</string>
+    <string name="splash_version">V 1.0 · STAGE ALPHA</string>
+
+    <!-- Login -->
+    <string name="login_continue_with_google">Continue with Google</string>
+    <string name="login_continue_with_apple">Continue with Apple</string>
+    <string name="login_legal_footer">By continuing you agree to our Terms of Service and Privacy Policy</string>
+
+    <!-- Stat card labels -->
+    <string name="stat_workouts">WORKOUTS</string>
+    <string name="stat_this_week">THIS WEEK</string>
+    <string name="stat_streak">STREAK</string>
+
+</resources>

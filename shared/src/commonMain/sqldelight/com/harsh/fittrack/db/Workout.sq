@@ -1,0 +1,35 @@
+CREATE TABLE WorkoutEntity (
+    id              TEXT NOT NULL PRIMARY KEY,
+    userId          TEXT NOT NULL,
+    title           TEXT NOT NULL,
+    date            TEXT NOT NULL,          -- ISO LocalDate
+    durationSeconds INTEGER NOT NULL,
+    isCompleted     INTEGER NOT NULL        -- 0 / 1
+);
+
+CREATE INDEX workout_user_date ON WorkoutEntity(userId, date DESC);
+
+insert:
+INSERT INTO WorkoutEntity(id, userId, title, date, durationSeconds, isCompleted)
+VALUES (?, ?, ?, ?, ?, ?);
+
+updateTitle:
+UPDATE WorkoutEntity SET title = ? WHERE id = ?;
+
+updateDuration:
+UPDATE WorkoutEntity SET durationSeconds = ? WHERE id = ?;
+
+markCompleted:
+UPDATE WorkoutEntity SET isCompleted = 1, durationSeconds = ? WHERE id = ?;
+
+delete:
+DELETE FROM WorkoutEntity WHERE id = ?;
+
+selectAllForUser:
+SELECT * FROM WorkoutEntity WHERE userId = ? AND isCompleted = 1 ORDER BY date DESC;
+
+selectActiveForUser:
+SELECT * FROM WorkoutEntity WHERE userId = ? AND isCompleted = 0 LIMIT 1;
+
+selectById:
+SELECT * FROM WorkoutEntity WHERE id = ?;

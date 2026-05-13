@@ -1,3 +1,10 @@
 <resources>
     <string name="app_name">FitTrack</string>
+
+    <!--
+        OAuth 2.0 Web client ID from Firebase.
+        Firebase Console → Project settings → General → Web SDK configuration → Web client ID.
+        Required by Credential Manager when requesting a Google ID token for Firebase.
+    -->
+    <string name="firebase_web_client_id" translatable="false">742757384212-cqv75kbhtl97q4rrr6fl44va865ukmc7.apps.googleusercontent.com</string>
 </resources>

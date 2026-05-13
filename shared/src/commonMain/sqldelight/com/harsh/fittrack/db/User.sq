@@ -1,0 +1,20 @@
+CREATE TABLE UserEntity (
+    id          TEXT NOT NULL PRIMARY KEY,
+    name        TEXT NOT NULL,
+    email       TEXT NOT NULL,
+    photoUrl    TEXT,
+    units       TEXT NOT NULL DEFAULT 'KG'
+);
+
+upsert:
+INSERT OR REPLACE INTO UserEntity(id, name, email, photoUrl, units)
+VALUES (?, ?, ?, ?, ?);
+
+selectById:
+SELECT * FROM UserEntity WHERE id = ?;
+
+setUnits:
+UPDATE UserEntity SET units = ? WHERE id = ?;
+
+deleteAll:
+DELETE FROM UserEntity;
