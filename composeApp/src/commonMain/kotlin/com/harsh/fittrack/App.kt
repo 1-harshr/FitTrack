@@ -1,13 +1,13 @@
 package com.harsh.fittrack
 
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import com.harsh.fittrack.ui.theme.FitTrackTheme
 import org.koin.compose.KoinContext
 
 @Composable
 fun App() {
     KoinContext {
-        MaterialTheme {
+        FitTrackTheme {
             // Navigation host goes here
         }
     }
