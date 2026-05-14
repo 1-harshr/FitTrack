@@ -60,8 +60,18 @@ fun MainTabsScaffold(onSignedOut: () -> Unit = {}) {
             navController = navController,
             startDestination = Route.Home,
             modifier = Modifier.padding(innerPadding),
+            // Default transitions for detail screens pushed on top of a tab
+            enterTransition = { slideInFromRight() },
+            exitTransition = { slideOutToLeft() },
+            popEnterTransition = { slideInFromLeft() },
+            popExitTransition = { slideOutToRight() },
         ) {
-            composable<Route.Home> {
+            composable<Route.Home>(
+                enterTransition = { tabEnter() },
+                exitTransition = { tabExit() },
+                popEnterTransition = { tabEnter() },
+                popExitTransition = { tabExit() },
+            ) {
                 HomeScreen(
                     onWorkoutClick = { workoutId ->
                         navController.navigate(Route.WorkoutDetail(workoutId))
@@ -79,7 +89,12 @@ fun MainTabsScaffold(onSignedOut: () -> Unit = {}) {
                 )
             }
 
-            composable<Route.RecordWorkout> { backStackEntry ->
+            composable<Route.RecordWorkout>(
+                enterTransition = { tabEnter() },
+                exitTransition = { tabExit() },
+                popEnterTransition = { tabEnter() },
+                popExitTransition = { tabExit() },
+            ) { backStackEntry ->
                 val addedExerciseId by backStackEntry.savedStateHandle
                     .getStateFlow<String?>("added_exercise_id", null)
                     .collectAsStateWithLifecycle()
@@ -112,7 +127,12 @@ fun MainTabsScaffold(onSignedOut: () -> Unit = {}) {
                 )
             }
 
-            composable<Route.ExerciseLibrary> {
+            composable<Route.ExerciseLibrary>(
+                enterTransition = { tabEnter() },
+                exitTransition = { tabExit() },
+                popEnterTransition = { tabEnter() },
+                popExitTransition = { tabExit() },
+            ) {
                 ExerciseLibraryScreen(
                     onExerciseClick = { exerciseId ->
                         navController.navigate(
@@ -135,7 +155,12 @@ fun MainTabsScaffold(onSignedOut: () -> Unit = {}) {
                 )
             }
 
-            composable<Route.Profile> {
+            composable<Route.Profile>(
+                enterTransition = { tabEnter() },
+                exitTransition = { tabExit() },
+                popEnterTransition = { tabEnter() },
+                popExitTransition = { tabExit() },
+            ) {
                 ProfileScreen(onSignedOut = onSignedOut)
             }
         }

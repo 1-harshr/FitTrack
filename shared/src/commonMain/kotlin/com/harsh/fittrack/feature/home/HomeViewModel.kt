@@ -4,9 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.harsh.fittrack.core.time.Clock
 import com.harsh.fittrack.core.util.GreetingProvider
-import com.harsh.fittrack.domain.model.Workout
 import com.harsh.fittrack.domain.repository.UserRepository
 import com.harsh.fittrack.domain.repository.WorkoutRepository
+import com.harsh.fittrack.domain.usecase.stats.CalculateStreakUseCase
+import com.harsh.fittrack.domain.usecase.stats.CalculateWeeklyWorkoutsUseCase
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,10 +16,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
-import kotlinx.datetime.DatePeriod
-import kotlinx.datetime.DayOfWeek
-import kotlinx.datetime.LocalDate
-import kotlinx.datetime.minus
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class HomeViewModel(
@@ -26,6 +23,8 @@ class HomeViewModel(
     private val workoutRepository: WorkoutRepository,
     private val greetingProvider: GreetingProvider,
     private val clock: Clock,
+    private val calculateStreak: CalculateStreakUseCase,
+    private val calculateWeeklyWorkouts: CalculateWeeklyWorkoutsUseCase,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(HomeState())
@@ -39,38 +38,18 @@ class HomeViewModel(
         viewModelScope.launch {
             combine(userRepository.observeUser(), workoutsFlow) { user, workouts ->
                 val today = clock.nowLocalDateTime().date
-                val completed = workouts.filter { it.isCompleted }
                 HomeState(
                     greeting = greetingProvider.greeting(),
                     firstName = user?.name?.firstWord() ?: "",
-                    streakDays = computeStreak(completed, today),
-                    workoutsThisWeek = countThisWeek(completed, today),
-                    totalWorkouts = completed.size,
+                    streakDays = calculateStreak(workouts, today),
+                    workoutsThisWeek = calculateWeeklyWorkouts(workouts, today),
+                    totalWorkouts = workouts.count { it.isCompleted },
                     recentWorkouts = workouts.take(10),
                     today = today,
                     isLoading = false,
                 )
             }.collect { _state.value = it }
         }
-    }
-
-    private fun computeStreak(completed: List<Workout>, today: LocalDate): Int {
-        val dates = completed.map { it.date }.toHashSet()
-        var streak = 0
-        var check = today
-        // Accept streak that may start from today or yesterday
-        if (!dates.contains(check)) check = check.minus(DatePeriod(days = 1))
-        while (dates.contains(check)) {
-            streak++
-            check = check.minus(DatePeriod(days = 1))
-        }
-        return streak
-    }
-
-    private fun countThisWeek(completed: List<Workout>, today: LocalDate): Int {
-        val daysFromMonday = (today.dayOfWeek.ordinal - DayOfWeek.MONDAY.ordinal + 7) % 7
-        val weekStart = today.minus(DatePeriod(days = daysFromMonday))
-        return completed.count { it.date >= weekStart && it.date <= today }
     }
 
     private fun String.firstWord(): String = trim().split(" ").firstOrNull() ?: this
