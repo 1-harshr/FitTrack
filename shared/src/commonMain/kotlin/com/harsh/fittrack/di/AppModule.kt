@@ -13,6 +13,7 @@ import com.harsh.fittrack.domain.repository.AuthRepository
 import com.harsh.fittrack.domain.repository.ExerciseCatalog
 import com.harsh.fittrack.domain.repository.UserRepository
 import com.harsh.fittrack.domain.repository.WorkoutRepository
+import com.harsh.fittrack.domain.usecase.record.ValidateWorkoutUseCase
 import com.harsh.fittrack.feature.auth.AuthViewModel
 import com.harsh.fittrack.feature.exercises.ExercisesViewModel
 import com.harsh.fittrack.feature.home.HomeViewModel
@@ -50,10 +51,13 @@ val sharedModule: Module = module {
     single<UserRepository> { UserRepositoryImpl() }
     single<WorkoutRepository> { WorkoutRepositoryImpl(db = get()) }
 
+    // --- use cases ---
+    factory { ValidateWorkoutUseCase() }
+
     // --- view models ---
     factory { AuthViewModel(authRepository = get()) }
     factory { HomeViewModel(userRepository = get(), workoutRepository = get(), greetingProvider = get(), clock = get()) }
-    factory { RecordViewModel(workoutRepository = get(), catalog = get()) }
+    factory { RecordViewModel(workoutRepository = get(), catalog = get(), validateWorkout = get(), clock = get()) }
     factory { ExercisesViewModel(catalog = get()) }
     factory { (workoutId: String) -> WorkoutDetailViewModel(workoutId = workoutId, workoutRepository = get()) }
     factory { ProfileViewModel(userRepository = get(), workoutRepository = get(), authRepository = get(), clock = get()) }

@@ -41,9 +41,15 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.harsh.fittrack.core.util.DurationFormatter
 import com.harsh.fittrack.domain.model.SetEntry
 import com.harsh.fittrack.domain.repository.ExerciseWithSets
+import com.harsh.fittrack.domain.usecase.record.WorkoutValidationError
 import com.harsh.fittrack.feature.record.RecordViewModel
 import com.harsh.fittrack.resources.Res
 import com.harsh.fittrack.resources.record_add_exercise
+import com.harsh.fittrack.resources.record_validation_empty_set
+import com.harsh.fittrack.resources.record_validation_no_exercises
+import com.harsh.fittrack.resources.record_validation_no_sets
+import com.harsh.fittrack.resources.record_validation_ok
+import com.harsh.fittrack.resources.record_validation_title
 import com.harsh.fittrack.resources.record_add_set
 import com.harsh.fittrack.resources.record_cancel
 import com.harsh.fittrack.resources.record_discard
@@ -51,9 +57,14 @@ import com.harsh.fittrack.resources.record_discard_confirm_action
 import com.harsh.fittrack.resources.record_discard_confirm_body
 import com.harsh.fittrack.resources.record_discard_confirm_title
 import com.harsh.fittrack.resources.record_finish
+import com.harsh.fittrack.resources.record_finish_confirm_action
+import com.harsh.fittrack.resources.record_finish_confirm_body
+import com.harsh.fittrack.resources.record_finish_confirm_title
 import com.harsh.fittrack.resources.record_kg_col
 import com.harsh.fittrack.resources.record_reps_col
 import com.harsh.fittrack.resources.record_set_col
+import com.harsh.fittrack.resources.record_pre_start
+import com.harsh.fittrack.resources.record_pre_title_hint
 import com.harsh.fittrack.resources.record_title_hint
 import com.harsh.fittrack.ui.theme.FitTrackTheme
 import com.harsh.fittrack.ui.theme.SurfaceContainerHigh
@@ -83,14 +94,28 @@ fun RecordWorkoutScreen(
 
     var elapsed by remember { mutableStateOf(0L) }
     var showDiscardDialog by remember { mutableStateOf(false) }
+    var showFinishDialog by remember { mutableStateOf(false) }
     var showAddExercise by remember { mutableStateOf(false) }
 
-    // Local timer — ticks every second while recording
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(1000)
-            elapsed++
+    // Timer only ticks once the workout has started
+    LaunchedEffect(state.hasStarted) {
+        if (state.hasStarted) {
+            while (true) {
+                delay(1000)
+                elapsed++
+            }
         }
+    }
+
+    if (!state.hasStarted) {
+        PreWorkoutScreen(
+            title = state.title,
+            titlePlaceholder = vm.suggestedTitle,
+            onTitleChange = { vm.renameTitle(it) },
+            onStart = { vm.startWorkout() },
+            onDiscard = onDiscard,
+        )
+        return@RecordWorkoutScreen
     }
 
     Box(
@@ -179,7 +204,7 @@ fun RecordWorkoutScreen(
                     .height(52.dp)
                     .clip(RoundedCornerShape(12.dp))
                     .background(FitTrackTheme.colors.primary)
-                    .clickable { vm.finish(); onFinished() },
+                    .clickable { if (vm.finish()) showFinishDialog = true },
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
@@ -239,6 +264,236 @@ fun RecordWorkoutScreen(
             containerColor = FitTrackTheme.colors.surface,
             shape = RoundedCornerShape(16.dp),
         )
+    }
+
+    // ── Finish confirmation dialog ────────────────────────────────────
+    if (showFinishDialog) {
+        val totalSets = state.exercises.sumOf { it.sets.size }
+        val body = stringResource(Res.string.record_finish_confirm_body)
+            .replace("%1\$s", DurationFormatter.minutes(elapsed))
+            .replace("%2\$s", state.exercises.size.toString())
+            .replace("%3\$s", totalSets.toString())
+
+        AlertDialog(
+            onDismissRequest = { showFinishDialog = false },
+            title = {
+                Text(
+                    text = stringResource(Res.string.record_finish_confirm_title),
+                    style = FitTrackTheme.typography.headlineSmall,
+                    color = FitTrackTheme.colors.onSurface,
+                    fontWeight = FontWeight.Bold,
+                )
+            },
+            text = {
+                Text(
+                    text = body,
+                    style = FitTrackTheme.typography.bodyMedium,
+                    color = FitTrackTheme.colors.onSurfaceVariant,
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { showFinishDialog = false; onFinished() }) {
+                    Text(
+                        text = stringResource(Res.string.record_finish_confirm_action),
+                        color = FitTrackTheme.colors.primary,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showFinishDialog = false }) {
+                    Text(
+                        text = stringResource(Res.string.record_cancel),
+                        color = FitTrackTheme.colors.onSurfaceVariant,
+                    )
+                }
+            },
+            containerColor = FitTrackTheme.colors.surface,
+            shape = RoundedCornerShape(16.dp),
+        )
+    }
+
+    // ── Validation error dialog ───────────────────────────────────────
+    if (state.validationErrors.isNotEmpty()) {
+        ValidationErrorDialog(
+            errors = state.validationErrors,
+            onDismiss = { vm.clearValidationErrors() },
+        )
+    }
+}
+
+// ── Validation error dialog ───────────────────────────────────────────────────
+
+@Composable
+private fun ValidationErrorDialog(
+    errors: List<WorkoutValidationError>,
+    onDismiss: () -> Unit,
+) {
+    val noExercises = stringResource(Res.string.record_validation_no_exercises)
+    val noSetsTemplate = stringResource(Res.string.record_validation_no_sets)
+    val emptySetTemplate = stringResource(Res.string.record_validation_empty_set)
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = stringResource(Res.string.record_validation_title),
+                style = FitTrackTheme.typography.headlineSmall,
+                color = FitTrackTheme.colors.onSurface,
+                fontWeight = FontWeight.Bold,
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(FitTrackTheme.spacing.sm)) {
+                errors.forEach { error ->
+                    val message = when (error) {
+                        is WorkoutValidationError.NoExercises -> noExercises
+                        is WorkoutValidationError.NoSets ->
+                            noSetsTemplate.replace("%1\$s", error.exerciseName)
+                        is WorkoutValidationError.EmptySet ->
+                            emptySetTemplate
+                                .replace("%1\$s", error.exerciseName)
+                                .replace("%2\$s", error.setNumber.toString())
+                    }
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(FitTrackTheme.spacing.sm),
+                        verticalAlignment = Alignment.Top,
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .padding(top = 6.dp)
+                                .size(6.dp)
+                                .background(FitTrackTheme.colors.error, CircleShape)
+                        )
+                        Text(
+                            text = message,
+                            style = FitTrackTheme.typography.bodySmall,
+                            color = FitTrackTheme.colors.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(
+                    text = stringResource(Res.string.record_validation_ok),
+                    color = FitTrackTheme.colors.primary,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+        },
+        containerColor = FitTrackTheme.colors.surface,
+        shape = RoundedCornerShape(16.dp),
+    )
+}
+
+// ── Pre-workout screen ────────────────────────────────────────────────────────
+
+@Composable
+private fun PreWorkoutScreen(
+    title: String,
+    titlePlaceholder: String,
+    onTitleChange: (String) -> Unit,
+    onStart: () -> Unit,
+    onDiscard: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(FitTrackTheme.colors.surface)
+            .systemBarsPadding(),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = FitTrackTheme.spacing.containerMargin),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            // Dumbbell placeholder
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .background(FitTrackTheme.colors.primary.copy(alpha = 0.12f), RoundedCornerShape(20.dp)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Box(Modifier.size(44.dp, 10.dp).background(FitTrackTheme.colors.primary.copy(alpha = 0.6f), RoundedCornerShape(3.dp)))
+                    Box(Modifier.size(6.dp, 16.dp).background(FitTrackTheme.colors.primary.copy(alpha = 0.4f)))
+                    Box(Modifier.size(44.dp, 10.dp).background(FitTrackTheme.colors.primary.copy(alpha = 0.6f), RoundedCornerShape(3.dp)))
+                }
+            }
+
+            Spacer(Modifier.height(FitTrackTheme.spacing.lg))
+
+            // Editable workout title
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(FitTrackTheme.colors.surface)
+                    .padding(bottom = FitTrackTheme.spacing.sm),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (title.isEmpty()) {
+                    Text(
+                        text = titlePlaceholder,
+                        style = FitTrackTheme.typography.headlineSmall,
+                        color = FitTrackTheme.colors.onSurfaceVariant.copy(alpha = 0.4f),
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+                BasicTextField(
+                    value = title,
+                    onValueChange = onTitleChange,
+                    textStyle = FitTrackTheme.typography.headlineSmall.copy(
+                        color = FitTrackTheme.colors.onSurface,
+                        fontWeight = FontWeight.Bold,
+                    ),
+                    cursorBrush = SolidColor(FitTrackTheme.colors.primary),
+                    singleLine = true,
+                )
+            }
+
+            Spacer(Modifier.height(FitTrackTheme.spacing.xl))
+
+            // Start button
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(FitTrackTheme.colors.primary)
+                    .clickable(onClick = onStart),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = stringResource(Res.string.record_pre_start),
+                    style = FitTrackTheme.typography.labelLarge,
+                    color = FitTrackTheme.colors.onPrimary,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+
+            Spacer(Modifier.height(FitTrackTheme.spacing.md))
+
+            // Discard link
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable(onClick = onDiscard)
+                    .padding(horizontal = FitTrackTheme.spacing.md, vertical = FitTrackTheme.spacing.sm),
+            ) {
+                Text(
+                    text = stringResource(Res.string.record_discard),
+                    style = FitTrackTheme.typography.labelLarge,
+                    color = FitTrackTheme.colors.onSurfaceVariant,
+                )
+            }
+        }
     }
 }
 

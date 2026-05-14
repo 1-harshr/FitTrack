@@ -1,12 +1,15 @@
 package com.harsh.fittrack.feature.record
 
 import com.harsh.fittrack.domain.repository.ExerciseWithSets
+import com.harsh.fittrack.domain.usecase.record.WorkoutValidationError
 
 data class RecordState(
     val workoutId: String? = null,
     val title: String = "",
+    val hasStarted: Boolean = false,
     val elapsedSeconds: Long = 0,
     val exercises: List<ExerciseWithSets> = emptyList(),
     val exerciseNames: Map<String, String> = emptyMap(),
+    val validationErrors: List<WorkoutValidationError> = emptyList(),
     val isCompleting: Boolean = false,
 )

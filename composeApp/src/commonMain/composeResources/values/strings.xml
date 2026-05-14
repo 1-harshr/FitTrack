@@ -76,6 +76,8 @@
     <string name="add_exercise_filter_all">ALL</string>
 
     <!-- Record workout screen -->
+    <string name="record_pre_title_hint">Name your workout</string>
+    <string name="record_pre_start">START WORKOUT</string>
     <string name="record_title_hint">Workout Title</string>
     <string name="record_add_exercise">+ ADD EXERCISE</string>
     <string name="record_finish">FINISH</string>
@@ -90,6 +92,14 @@
     <string name="record_reps_col">REPS</string>
     <string name="record_empty_title">No exercises yet</string>
     <string name="record_empty_subtitle">Tap "Add Exercise" to get started</string>
+    <string name="record_finish_confirm_title">Finish workout?</string>
+    <string name="record_finish_confirm_body">%1$s · %2$s exercises · %3$s sets</string>
+    <string name="record_finish_confirm_action">Finish</string>
+    <string name="record_validation_title">Can't finish yet</string>
+    <string name="record_validation_ok">Got it</string>
+    <string name="record_validation_no_exercises">Add at least one exercise before finishing.</string>
+    <string name="record_validation_no_sets">%1$s has no sets — add at least one.</string>
+    <string name="record_validation_empty_set">%1$s · Set %2$s is missing reps.</string>
 
     <!-- Workout complete screen -->
     <string name="complete_headline">Workout Done!</string>
