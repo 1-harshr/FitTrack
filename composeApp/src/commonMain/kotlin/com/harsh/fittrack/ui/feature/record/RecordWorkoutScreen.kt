@@ -66,12 +66,24 @@ import org.koin.compose.viewmodel.koinViewModel
 fun RecordWorkoutScreen(
     onFinished: () -> Unit,
     onDiscard: () -> Unit,
+    onOpenExerciseDetail: (exerciseId: String) -> Unit = {},
+    addedExerciseId: String? = null,
+    onExerciseConsumed: () -> Unit = {},
 ) {
     val vm: RecordViewModel = koinViewModel()
     val state by vm.state.collectAsStateWithLifecycle()
 
+    // Exercise added via ExerciseDetail SHEET flow — consume once
+    LaunchedEffect(addedExerciseId) {
+        if (addedExerciseId != null) {
+            vm.addExercise(addedExerciseId)
+            onExerciseConsumed()
+        }
+    }
+
     var elapsed by remember { mutableStateOf(0L) }
     var showDiscardDialog by remember { mutableStateOf(false) }
+    var showAddExercise by remember { mutableStateOf(false) }
 
     // Local timer — ticks every second while recording
     LaunchedEffect(Unit) {
@@ -118,6 +130,8 @@ fun RecordWorkoutScreen(
                 items(state.exercises, key = { it.entry.id }) { exerciseWithSets ->
                     RecordExerciseSection(
                         exerciseWithSets = exerciseWithSets,
+                        exerciseName = state.exerciseNames[exerciseWithSets.entry.exerciseId]
+                            ?: exerciseWithSets.entry.exerciseId,
                         onAddSet = { vm.addSet(exerciseWithSets.entry.id) },
                         onUpdateSet = { vm.updateSet(it) },
                         modifier = Modifier
@@ -137,7 +151,7 @@ fun RecordWorkoutScreen(
                         .height(48.dp)
                         .clip(RoundedCornerShape(12.dp))
                         .background(SurfaceContainerHigh)
-                        .clickable { /* TODO: open exercise picker */ },
+                        .clickable { showAddExercise = true },
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
@@ -177,6 +191,14 @@ fun RecordWorkoutScreen(
             }
         }
     }
+
+    // ── Add exercise sheet ────────────────────────────────────────────
+    AddExerciseSheet(
+        visible = showAddExercise,
+        onDismiss = { showAddExercise = false },
+        onAdd = { exerciseId -> vm.addExercise(exerciseId) },
+        onOpenDetail = { exerciseId -> showAddExercise = false; onOpenExerciseDetail(exerciseId) },
+    )
 
     // ── Discard confirmation dialog ───────────────────────────────────
     if (showDiscardDialog) {
@@ -298,6 +320,7 @@ private fun RecordTopBar(
 @Composable
 private fun RecordExerciseSection(
     exerciseWithSets: ExerciseWithSets,
+    exerciseName: String,
     onAddSet: () -> Unit,
     onUpdateSet: (SetEntry) -> Unit,
     modifier: Modifier = Modifier,
@@ -328,7 +351,7 @@ private fun RecordExerciseSection(
                 )
             }
             Text(
-                text = exerciseWithSets.entry.exerciseId,
+                text = exerciseName,
                 style = FitTrackTheme.typography.bodyMedium,
                 color = FitTrackTheme.colors.onSurface,
                 fontWeight = FontWeight.SemiBold,

@@ -25,7 +25,9 @@
       "Read(//opt/homebrew/bin/**)",
       "Bash(brew --version)",
       "Bash(brew install *)",
-      "Bash(/opt/homebrew/bin/pod install *)"
+      "Bash(/opt/homebrew/bin/pod install *)",
+      "Bash(xargs cat)",
+      "Bash(xargs ls -la)"
     ]
   }
 }

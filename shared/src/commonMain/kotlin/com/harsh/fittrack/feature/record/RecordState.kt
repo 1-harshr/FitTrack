@@ -7,5 +7,6 @@ data class RecordState(
     val title: String = "",
     val elapsedSeconds: Long = 0,
     val exercises: List<ExerciseWithSets> = emptyList(),
+    val exerciseNames: Map<String, String> = emptyMap(),
     val isCompleting: Boolean = false,
 )

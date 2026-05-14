@@ -70,6 +70,11 @@
     <string name="profile_sign_out_confirm_action">Sign Out</string>
     <string name="profile_cancel">Cancel</string>
 
+    <!-- Add exercise sheet -->
+    <string name="add_exercise_title">Add Exercise</string>
+    <string name="add_exercise_search_hint">Search exercises…</string>
+    <string name="add_exercise_filter_all">ALL</string>
+
     <!-- Record workout screen -->
     <string name="record_title_hint">Workout Title</string>
     <string name="record_add_exercise">+ ADD EXERCISE</string>

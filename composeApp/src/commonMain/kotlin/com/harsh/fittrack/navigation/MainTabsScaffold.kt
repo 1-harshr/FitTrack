@@ -5,6 +5,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -72,7 +73,11 @@ fun MainTabsScaffold(onSignedOut: () -> Unit = {}) {
                 )
             }
 
-            composable<Route.RecordWorkout> {
+            composable<Route.RecordWorkout> { backStackEntry ->
+                val addedExerciseId by backStackEntry.savedStateHandle
+                    .getStateFlow<String?>("added_exercise_id", null)
+                    .collectAsStateWithLifecycle()
+
                 RecordWorkoutScreen(
                     onFinished = {
                         navController.navigate(Route.WorkoutComplete) {
@@ -80,6 +85,13 @@ fun MainTabsScaffold(onSignedOut: () -> Unit = {}) {
                         }
                     },
                     onDiscard = { navController.popBackStack() },
+                    onOpenExerciseDetail = { exerciseId ->
+                        navController.navigate(Route.ExerciseDetail(exerciseId, ExerciseDetailSource.SHEET))
+                    },
+                    addedExerciseId = addedExerciseId,
+                    onExerciseConsumed = {
+                        backStackEntry.savedStateHandle.remove<String>("added_exercise_id")
+                    },
                 )
             }
 
@@ -107,7 +119,12 @@ fun MainTabsScaffold(onSignedOut: () -> Unit = {}) {
                 ExerciseDetailScreen(
                     backStackEntry = backStackEntry,
                     onBack = { navController.popBackStack() },
-                    onAddToWorkout = { _ -> navController.popBackStack() },
+                    onAddToWorkout = { exerciseId ->
+                        navController.previousBackStackEntry
+                            ?.savedStateHandle
+                            ?.set("added_exercise_id", exerciseId)
+                        navController.popBackStack()
+                    },
                 )
             }
 

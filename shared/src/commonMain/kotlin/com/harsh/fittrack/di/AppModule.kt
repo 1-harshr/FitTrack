@@ -53,7 +53,7 @@ val sharedModule: Module = module {
     // --- view models ---
     factory { AuthViewModel(authRepository = get()) }
     factory { HomeViewModel(userRepository = get(), workoutRepository = get(), greetingProvider = get(), clock = get()) }
-    factory { RecordViewModel(workoutRepository = get()) }
+    factory { RecordViewModel(workoutRepository = get(), catalog = get()) }
     factory { ExercisesViewModel(catalog = get()) }
     factory { (workoutId: String) -> WorkoutDetailViewModel(workoutId = workoutId, workoutRepository = get()) }
     factory { ProfileViewModel(userRepository = get(), workoutRepository = get(), authRepository = get(), clock = get()) }
