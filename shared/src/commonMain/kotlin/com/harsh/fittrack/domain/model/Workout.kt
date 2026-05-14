@@ -7,7 +7,8 @@ data class Workout(
     val userId: String,
     val title: String,
     val date: LocalDate,
+    val startedAt: Long,            // epoch ms
     val durationSeconds: Long,
+    val totalVolumeKg: Double,
     val isCompleted: Boolean,
-    val totalVolumeKg: Double = 0.0,
 )

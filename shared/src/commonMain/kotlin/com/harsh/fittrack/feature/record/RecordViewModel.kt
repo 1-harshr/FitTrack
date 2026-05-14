@@ -50,13 +50,14 @@ class RecordViewModel(
     }
 
     fun addExercise(exerciseId: String) {
+        val name = catalog.byId(exerciseId)?.name ?: exerciseId
         val entry = ExerciseEntry(
             id = newId(),
             workoutId = _state.value.workoutId ?: "local",
             exerciseId = exerciseId,
+            exerciseName = name,
             orderIndex = _state.value.exercises.size,
         )
-        val name = catalog.byId(exerciseId)?.name ?: exerciseId
         val firstSet = SetEntry(
             id = newId(),
             exerciseEntryId = entry.id,
@@ -67,7 +68,6 @@ class RecordViewModel(
         )
         _state.value = _state.value.copy(
             exercises = _state.value.exercises + ExerciseWithSets(entry = entry, sets = listOf(firstSet)),
-            exerciseNames = _state.value.exerciseNames + (exerciseId to name),
         )
     }
 
@@ -102,10 +102,7 @@ class RecordViewModel(
 
     /** Returns true if the workout passed validation and can proceed to the complete screen. */
     fun finish(): Boolean {
-        val result = validateWorkout(
-            exercises = _state.value.exercises,
-            exerciseNames = _state.value.exerciseNames,
-        )
+        val result = validateWorkout(_state.value.exercises)
         return when (result) {
             is WorkoutValidationResult.Valid -> {
                 _state.value = _state.value.copy(isCompleting = true, validationErrors = emptyList())

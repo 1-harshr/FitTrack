@@ -5,5 +5,6 @@ data class ExerciseEntry(
     val id: String,
     val workoutId: String,
     val exerciseId: String,
+    val exerciseName: String,
     val orderIndex: Int,
 )

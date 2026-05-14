@@ -155,8 +155,7 @@ fun RecordWorkoutScreen(
                 items(state.exercises, key = { it.entry.id }) { exerciseWithSets ->
                     RecordExerciseSection(
                         exerciseWithSets = exerciseWithSets,
-                        exerciseName = state.exerciseNames[exerciseWithSets.entry.exerciseId]
-                            ?: exerciseWithSets.entry.exerciseId,
+                        exerciseName = exerciseWithSets.entry.exerciseName,
                         onAddSet = { vm.addSet(exerciseWithSets.entry.id) },
                         onUpdateSet = { vm.updateSet(it) },
                         modifier = Modifier

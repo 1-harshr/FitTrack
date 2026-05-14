@@ -6,7 +6,6 @@ class ValidateWorkoutUseCase {
 
     operator fun invoke(
         exercises: List<ExerciseWithSets>,
-        exerciseNames: Map<String, String>,
     ): WorkoutValidationResult {
         val errors = mutableListOf<WorkoutValidationError>()
 
@@ -15,7 +14,7 @@ class ValidateWorkoutUseCase {
         }
 
         for (ews in exercises) {
-            val name = exerciseNames[ews.entry.exerciseId] ?: ews.entry.exerciseId
+            val name = ews.entry.exerciseName
 
             if (ews.sets.isEmpty()) {
                 errors += WorkoutValidationError.NoSets(name)

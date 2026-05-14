@@ -9,7 +9,6 @@ data class RecordState(
     val hasStarted: Boolean = false,
     val elapsedSeconds: Long = 0,
     val exercises: List<ExerciseWithSets> = emptyList(),
-    val exerciseNames: Map<String, String> = emptyMap(),
     val validationErrors: List<WorkoutValidationError> = emptyList(),
     val isCompleting: Boolean = false,
 )
