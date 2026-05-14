@@ -21,7 +21,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,7 +35,7 @@ import com.harsh.fittrack.domain.model.Equipment
 import com.harsh.fittrack.domain.model.Exercise
 import com.harsh.fittrack.domain.model.MovementType
 import com.harsh.fittrack.domain.model.MuscleGroup
-import com.harsh.fittrack.domain.repository.ExerciseCatalog
+import com.harsh.fittrack.domain.repository.ExerciseRepository
 import com.harsh.fittrack.navigation.ExerciseDetailSource
 import com.harsh.fittrack.navigation.Route
 import com.harsh.fittrack.resources.Res
@@ -57,10 +58,12 @@ fun ExerciseDetailScreen(
     onAddToWorkout: (exerciseId: String) -> Unit = {},
 ) {
     val route = backStackEntry.toRoute<Route.ExerciseDetail>()
-    val catalog: ExerciseCatalog = koinInject()
-    val exercise = remember(route.exerciseId) { catalog.byId(route.exerciseId) }
+    val exerciseRepository: ExerciseRepository = koinInject()
+    val exercise by produceState<Exercise?>(null, route.exerciseId) {
+        value = exerciseRepository.byId(route.exerciseId)
+    }
 
-    if (exercise == null) {
+    val ex = exercise ?: run {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text("Exercise not found", color = FitTrackTheme.colors.onSurface)
         }
@@ -81,7 +84,7 @@ fun ExerciseDetailScreen(
             // ── Hero ──────────────────────────────────────────────────────
             item {
                 ExerciseHero(
-                    exercise = exercise,
+                    exercise = ex,
                     onBack = onBack,
                 )
             }
@@ -89,7 +92,7 @@ fun ExerciseDetailScreen(
             // ── Meta chips ────────────────────────────────────────────────
             item {
                 ExerciseMetaSection(
-                    exercise = exercise,
+                    exercise = ex,
                     modifier = Modifier.padding(
                         horizontal = FitTrackTheme.spacing.containerMargin,
                         vertical = FitTrackTheme.spacing.md,
@@ -111,7 +114,7 @@ fun ExerciseDetailScreen(
             }
 
             // ── Instructions steps ────────────────────────────────────────
-            itemsIndexed(exercise.instructions) { index, step ->
+            itemsIndexed(ex.instructions) { index, step ->
                 InstructionStep(
                     number = index + 1,
                     text = step,
@@ -138,7 +141,7 @@ fun ExerciseDetailScreen(
                         .height(52.dp)
                         .clip(RoundedCornerShape(12.dp))
                         .background(FitTrackTheme.colors.primary)
-                        .clickable { onAddToWorkout(exercise.id) },
+                        .clickable { onAddToWorkout(ex.id) },
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(

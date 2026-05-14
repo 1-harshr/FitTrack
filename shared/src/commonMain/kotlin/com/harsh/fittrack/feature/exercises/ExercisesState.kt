@@ -7,4 +7,6 @@ data class ExercisesState(
     val query: String = "",
     val activeMuscleGroup: MuscleGroup? = null,
     val results: List<Exercise> = emptyList(),
+    val strengthCount: Int = 0,
+    val cardioCount: Int = 0,
 )

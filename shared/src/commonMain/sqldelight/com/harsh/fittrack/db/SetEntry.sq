@@ -27,3 +27,10 @@ SELECT * FROM SetEntryEntity WHERE exerciseEntryId = ? ORDER BY setNumber;
 
 nextSetNumber:
 SELECT COALESCE(MAX(setNumber) + 1, 1) FROM SetEntryEntity WHERE exerciseEntryId = ?;
+
+selectForWorkout:
+SELECT SetEntryEntity.*
+FROM SetEntryEntity
+INNER JOIN ExerciseEntryEntity ON SetEntryEntity.exerciseEntryId = ExerciseEntryEntity.id
+WHERE ExerciseEntryEntity.workoutId = ?
+ORDER BY ExerciseEntryEntity.orderIndex, SetEntryEntity.setNumber;

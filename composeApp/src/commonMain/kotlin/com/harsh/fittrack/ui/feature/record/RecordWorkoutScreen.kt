@@ -75,6 +75,7 @@ import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun RecordWorkoutScreen(
+    userId: String,
     onFinished: () -> Unit,
     onDiscard: () -> Unit,
     onOpenExerciseDetail: (exerciseId: String) -> Unit = {},
@@ -83,6 +84,8 @@ fun RecordWorkoutScreen(
 ) {
     val vm: RecordViewModel = koinViewModel()
     val state by vm.state.collectAsStateWithLifecycle()
+
+    LaunchedEffect(userId) { vm.startOrResumeWorkout(userId) }
 
     // Exercise added via ExerciseDetail SHEET flow — consume once
     LaunchedEffect(addedExerciseId) {
@@ -203,7 +206,7 @@ fun RecordWorkoutScreen(
                     .height(52.dp)
                     .clip(RoundedCornerShape(12.dp))
                     .background(FitTrackTheme.colors.primary)
-                    .clickable { if (vm.finish()) showFinishDialog = true },
+                    .clickable { if (vm.finish(elapsed)) showFinishDialog = true },
                 contentAlignment = Alignment.Center,
             ) {
                 Text(

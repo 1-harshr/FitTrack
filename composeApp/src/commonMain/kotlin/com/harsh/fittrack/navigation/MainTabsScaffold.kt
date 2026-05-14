@@ -11,6 +11,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.harsh.fittrack.domain.repository.UserRepository
 import com.harsh.fittrack.ui.component.FitBottomNav
 import com.harsh.fittrack.ui.feature.exercises.ExerciseDetailScreen
 import com.harsh.fittrack.ui.feature.exercises.ExerciseLibraryScreen
@@ -19,9 +20,14 @@ import com.harsh.fittrack.ui.feature.home.WorkoutDetailScreen
 import com.harsh.fittrack.ui.feature.profile.ProfileScreen
 import com.harsh.fittrack.ui.feature.record.RecordWorkoutScreen
 import com.harsh.fittrack.ui.feature.record.WorkoutCompleteScreen
+import org.koin.compose.koinInject
 
 @Composable
 fun MainTabsScaffold(onSignedOut: () -> Unit = {}) {
+    val userRepository: UserRepository = koinInject()
+    val user by userRepository.observeUser().collectAsStateWithLifecycle(null)
+    val userId = user?.id ?: return
+
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
 
@@ -79,6 +85,7 @@ fun MainTabsScaffold(onSignedOut: () -> Unit = {}) {
                     .collectAsStateWithLifecycle()
 
                 RecordWorkoutScreen(
+                    userId = userId,
                     onFinished = {
                         navController.navigate(Route.WorkoutComplete) {
                             popUpTo(Route.RecordWorkout) { inclusive = true }

@@ -4,11 +4,11 @@ import com.harsh.fittrack.domain.model.Equipment
 import com.harsh.fittrack.domain.model.Exercise
 import com.harsh.fittrack.domain.model.MovementType
 import com.harsh.fittrack.domain.model.MuscleGroup
-import com.harsh.fittrack.domain.repository.ExerciseCatalog
 
-class StaticExerciseCatalog : ExerciseCatalog {
+/** Bundled exercise list — seeds the DB on first launch. Replace with a backend call to update. */
+object ExerciseSeed {
 
-    private val exercises: List<Exercise> = listOf(
+    val exercises: List<Exercise> = listOf(
         // ── Chest ────────────────────────────────────────────────────────
         Exercise(
             id = "bench_press",
@@ -397,16 +397,4 @@ class StaticExerciseCatalog : ExerciseCatalog {
             ),
         ),
     )
-
-    override fun all(): List<Exercise> = exercises
-
-    override fun byId(id: String): Exercise? = exercises.firstOrNull { it.id == id }
-
-    override fun search(query: String, muscleGroup: MuscleGroup?): List<Exercise> {
-        val q = query.trim().lowercase()
-        return exercises.filter {
-            (q.isEmpty() || it.name.lowercase().contains(q)) &&
-                (muscleGroup == null || it.primaryMuscle == muscleGroup)
-        }
-    }
 }

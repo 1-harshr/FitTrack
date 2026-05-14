@@ -1,0 +1,26 @@
+CREATE TABLE ExerciseEntity (
+    id               TEXT    NOT NULL PRIMARY KEY,
+    name             TEXT    NOT NULL,
+    primaryMuscle    TEXT    NOT NULL,          -- MuscleGroup enum name
+    secondaryMuscles TEXT    NOT NULL,          -- pipe-separated MuscleGroup names, empty string if none
+    equipment        TEXT    NOT NULL,          -- Equipment enum name
+    movementType     TEXT    NOT NULL,          -- MovementType enum name
+    instructions     TEXT    NOT NULL,          -- pipe-separated instruction steps
+    isCustom         INTEGER NOT NULL DEFAULT 0, -- 0 = built-in, 1 = user-created
+    catalogVersion   INTEGER NOT NULL DEFAULT 1  -- incremented on backend updates
+);
+
+CREATE INDEX exercise_muscle ON ExerciseEntity(primaryMuscle);
+
+selectAll:
+SELECT * FROM ExerciseEntity ORDER BY primaryMuscle, name;
+
+selectById:
+SELECT * FROM ExerciseEntity WHERE id = ?;
+
+upsert:
+INSERT OR REPLACE INTO ExerciseEntity(id, name, primaryMuscle, secondaryMuscles, equipment, movementType, instructions, isCustom, catalogVersion)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+count:
+SELECT COUNT(*) FROM ExerciseEntity;

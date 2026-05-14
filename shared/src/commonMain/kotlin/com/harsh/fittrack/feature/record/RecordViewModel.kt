@@ -1,14 +1,16 @@
 package com.harsh.fittrack.feature.record
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.harsh.fittrack.domain.model.ExerciseEntry
 import com.harsh.fittrack.domain.model.SetEntry
 import com.harsh.fittrack.core.time.Clock
-import com.harsh.fittrack.domain.repository.ExerciseCatalog
+import com.harsh.fittrack.domain.repository.ExerciseRepository
 import com.harsh.fittrack.domain.repository.ExerciseWithSets
 import com.harsh.fittrack.domain.repository.WorkoutRepository
 import com.harsh.fittrack.domain.usecase.record.ValidateWorkoutUseCase
 import com.harsh.fittrack.domain.usecase.record.WorkoutValidationResult
+import kotlinx.coroutines.launch
 import kotlin.random.Random
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,7 +18,7 @@ import kotlinx.coroutines.flow.asStateFlow
 
 class RecordViewModel(
     private val workoutRepository: WorkoutRepository,
-    private val catalog: ExerciseCatalog,
+    private val exerciseRepository: ExerciseRepository,
     private val validateWorkout: ValidateWorkoutUseCase,
     private val clock: Clock,
 ) : ViewModel() {
@@ -26,11 +28,32 @@ class RecordViewModel(
 
     val suggestedTitle: String = defaultWorkoutTitle()
 
-    fun startOrResumeWorkout(userId: String) { /* DB integration pending */ }
+    private var userId: String? = null
+
+    fun startOrResumeWorkout(userId: String) {
+        this.userId = userId
+        viewModelScope.launch {
+            val active = workoutRepository.getActiveWorkout(userId) ?: return@launch
+            _state.value = RecordState(
+                workoutId = active.workout.id,
+                title = active.workout.title,
+                hasStarted = true,
+                exercises = active.exercises,
+            )
+        }
+    }
 
     fun startWorkout() {
+        val uid = userId ?: return
         val title = _state.value.title.ifBlank { suggestedTitle }
-        _state.value = _state.value.copy(hasStarted = true, title = title)
+        viewModelScope.launch {
+            val workoutId = workoutRepository.createWorkout(userId = uid, title = title)
+            _state.value = _state.value.copy(
+                workoutId = workoutId,
+                title = title,
+                hasStarted = true,
+            )
+        }
     }
 
     private fun defaultWorkoutTitle(): String {
@@ -47,48 +70,100 @@ class RecordViewModel(
 
     fun renameTitle(title: String) {
         _state.value = _state.value.copy(title = title)
+        val workoutId = _state.value.workoutId ?: return
+        viewModelScope.launch { workoutRepository.renameWorkout(workoutId, title) }
     }
 
     fun addExercise(exerciseId: String) {
-        val name = catalog.byId(exerciseId)?.name ?: exerciseId
-        val entry = ExerciseEntry(
-            id = newId(),
-            workoutId = _state.value.workoutId ?: "local",
-            exerciseId = exerciseId,
-            exerciseName = name,
-            orderIndex = _state.value.exercises.size,
-        )
-        val firstSet = SetEntry(
-            id = newId(),
-            exerciseEntryId = entry.id,
-            setNumber = 1,
-            reps = 0,
-            weight = 0.0,
-            isCompleted = false,
-        )
-        _state.value = _state.value.copy(
-            exercises = _state.value.exercises + ExerciseWithSets(entry = entry, sets = listOf(firstSet)),
-        )
+        viewModelScope.launch {
+            val name = exerciseRepository.byId(exerciseId)?.name ?: exerciseId
+            val workoutId = _state.value.workoutId
+            if (workoutId != null) {
+                val entryId = workoutRepository.addExercise(workoutId, exerciseId, name)
+                val setId = workoutRepository.addSet(entryId)
+                val entry = ExerciseEntry(
+                    id = entryId,
+                    workoutId = workoutId,
+                    exerciseId = exerciseId,
+                    exerciseName = name,
+                    orderIndex = _state.value.exercises.size,
+                )
+                val firstSet = SetEntry(
+                    id = setId,
+                    exerciseEntryId = entryId,
+                    setNumber = 1,
+                    reps = 0,
+                    weight = 0.0,
+                    isCompleted = false,
+                )
+                _state.value = _state.value.copy(
+                    exercises = _state.value.exercises + ExerciseWithSets(entry = entry, sets = listOf(firstSet)),
+                )
+            } else {
+                val entry = ExerciseEntry(
+                    id = newId(),
+                    workoutId = "local",
+                    exerciseId = exerciseId,
+                    exerciseName = name,
+                    orderIndex = _state.value.exercises.size,
+                )
+                val firstSet = SetEntry(
+                    id = newId(),
+                    exerciseEntryId = entry.id,
+                    setNumber = 1,
+                    reps = 0,
+                    weight = 0.0,
+                    isCompleted = false,
+                )
+                _state.value = _state.value.copy(
+                    exercises = _state.value.exercises + ExerciseWithSets(entry = entry, sets = listOf(firstSet)),
+                )
+            }
+        }
     }
 
     fun addSet(exerciseEntryId: String) {
-        _state.value = _state.value.copy(
-            exercises = _state.value.exercises.map { ews ->
-                if (ews.entry.id != exerciseEntryId) ews
-                else {
-                    val last = ews.sets.lastOrNull()
-                    val set = SetEntry(
-                        id = newId(),
-                        exerciseEntryId = exerciseEntryId,
-                        setNumber = ews.sets.size + 1,
-                        reps = last?.reps ?: 0,
-                        weight = last?.weight ?: 0.0,
-                        isCompleted = false,
-                    )
-                    ews.copy(sets = ews.sets + set)
-                }
-            },
-        )
+        val workoutId = _state.value.workoutId
+        if (workoutId != null) {
+            viewModelScope.launch {
+                val setId = workoutRepository.addSet(exerciseEntryId)
+                _state.value = _state.value.copy(
+                    exercises = _state.value.exercises.map { ews ->
+                        if (ews.entry.id != exerciseEntryId) ews
+                        else {
+                            val last = ews.sets.lastOrNull()
+                            val set = SetEntry(
+                                id = setId,
+                                exerciseEntryId = exerciseEntryId,
+                                setNumber = ews.sets.size + 1,
+                                reps = last?.reps ?: 0,
+                                weight = last?.weight ?: 0.0,
+                                isCompleted = false,
+                            )
+                            ews.copy(sets = ews.sets + set)
+                        }
+                    },
+                )
+            }
+        } else {
+            _state.value = _state.value.copy(
+                exercises = _state.value.exercises.map { ews ->
+                    if (ews.entry.id != exerciseEntryId) ews
+                    else {
+                        val last = ews.sets.lastOrNull()
+                        val set = SetEntry(
+                            id = newId(),
+                            exerciseEntryId = exerciseEntryId,
+                            setNumber = ews.sets.size + 1,
+                            reps = last?.reps ?: 0,
+                            weight = last?.weight ?: 0.0,
+                            isCompleted = false,
+                        )
+                        ews.copy(sets = ews.sets + set)
+                    }
+                },
+            )
+        }
     }
 
     fun updateSet(set: SetEntry) {
@@ -98,15 +173,21 @@ class RecordViewModel(
                 else ews.copy(sets = ews.sets.map { if (it.id == set.id) set else it })
             },
         )
+        viewModelScope.launch { workoutRepository.updateSet(set) }
     }
 
     /** Returns true if the workout passed validation and can proceed to the complete screen. */
-    fun finish(): Boolean {
+    fun finish(durationSeconds: Long): Boolean {
         val result = validateWorkout(_state.value.exercises)
         return when (result) {
             is WorkoutValidationResult.Valid -> {
                 _state.value = _state.value.copy(isCompleting = true, validationErrors = emptyList())
-                // DB persistence pending
+                val workoutId = _state.value.workoutId
+                if (workoutId != null) {
+                    viewModelScope.launch {
+                        workoutRepository.finishWorkout(workoutId, durationSeconds)
+                    }
+                }
                 true
             }
             is WorkoutValidationResult.Invalid -> {
@@ -121,6 +202,10 @@ class RecordViewModel(
     }
 
     fun discard() {
+        val workoutId = _state.value.workoutId
+        if (workoutId != null) {
+            viewModelScope.launch { workoutRepository.discardWorkout(workoutId) }
+        }
         _state.value = RecordState()
     }
 

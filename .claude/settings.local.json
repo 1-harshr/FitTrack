@@ -27,7 +27,13 @@
       "Bash(brew install *)",
       "Bash(/opt/homebrew/bin/pod install *)",
       "Bash(xargs cat)",
-      "Bash(xargs ls -la)"
+      "Bash(xargs ls -la)",
+      "Bash(./gradlew :shared:generateCommonMainFitTrackDatabaseInterface)",
+      "Bash(./gradlew :shared:compileCommonMainKotlinMetadata)",
+      "Bash(./gradlew :composeApp:compileCommonMainKotlinMetadata)",
+      "Bash(./gradlew :shared:compileCommonMainKotlinMetadata :composeApp:compileCommonMainKotlinMetadata)",
+      "Bash(./gradlew :composeApp:compileDebugKotlin)",
+      "Bash(./gradlew :shared:compileCommonMainKotlinMetadata :composeApp:compileDebugKotlin)"
     ]
   }
 }

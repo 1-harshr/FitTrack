@@ -11,12 +11,13 @@ interface WorkoutRepository {
 
     fun observeWorkout(workoutId: String): Flow<WorkoutWithDetails?>
 
+    suspend fun getActiveWorkout(userId: String): WorkoutWithDetails?
     suspend fun createWorkout(userId: String, title: String): String
     suspend fun renameWorkout(workoutId: String, title: String)
     suspend fun finishWorkout(workoutId: String, durationSeconds: Long)
     suspend fun discardWorkout(workoutId: String)
 
-    suspend fun addExercise(workoutId: String, exerciseId: String): String
+    suspend fun addExercise(workoutId: String, exerciseId: String, exerciseName: String): String
     suspend fun removeExercise(exerciseEntryId: String)
 
     suspend fun addSet(exerciseEntryId: String): String

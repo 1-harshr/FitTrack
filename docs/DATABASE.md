@@ -17,13 +17,41 @@ UserEntity
               └──< ExerciseEntryEntity (workoutId)
                         │
                         └──< SetEntryEntity (exerciseEntryId)
+
+ExerciseEntity   ← seeded from bundled list, updatable via backend
+    ↑
+    exerciseId (denormalized snapshot → ExerciseEntryEntity.exerciseName)
 ```
 
-All foreign keys use `ON DELETE CASCADE`, so deleting a workout removes all its exercises and sets; deleting an exercise entry removes all its sets.
+All foreign keys on the workout tree use `ON DELETE CASCADE`, so deleting a workout removes all its exercises and sets; deleting an exercise entry removes all its sets. `ExerciseEntity` is a standalone reference table with no FK constraints — historical workout entries snapshot the name at log time.
 
 ---
 
 ## Tables
+
+### `ExerciseEntity`
+
+The exercise catalog. Seeded from a bundled list on first launch; rows can be patched from a backend without an app release. User-created exercises are distinguished by `isCustom = 1` and are never overwritten by backend sync.
+
+| Column            | Type    | Constraints               | Notes                                             |
+|-------------------|---------|---------------------------|---------------------------------------------------|
+| `id`              | TEXT    | PK, NOT NULL              | Stable slug e.g. `"bench_press"`                  |
+| `name`            | TEXT    | NOT NULL                  | Display name                                      |
+| `primaryMuscle`   | TEXT    | NOT NULL                  | `MuscleGroup` enum name                           |
+| `secondaryMuscles`| TEXT    | NOT NULL                  | Pipe-separated `MuscleGroup` names, `""` if none  |
+| `equipment`       | TEXT    | NOT NULL                  | `Equipment` enum name                             |
+| `movementType`    | TEXT    | NOT NULL                  | `MovementType` enum name                          |
+| `instructions`    | TEXT    | NOT NULL                  | Pipe-separated instruction steps                  |
+| `isCustom`        | INTEGER | NOT NULL DEFAULT 0        | `0` = built-in, `1` = user-created                |
+| `catalogVersion`  | INTEGER | NOT NULL DEFAULT 1        | Incremented on backend updates for sync checks    |
+
+**Index:** `exercise_muscle (primaryMuscle)` — speeds up muscle-group filter queries.
+
+**Queries:** `upsert`, `selectAll`, `selectById`, `count`
+
+> **Seeding:** `ExerciseRepositoryImpl` checks `count()` on first creation and bulk-inserts from `ExerciseSeed` if the table is empty. Future backend sync compares `catalogVersion` and calls `upsert` for changed rows only. `isCustom = 1` rows are excluded from sync.
+
+---
 
 ### `UserEntity`
 
@@ -72,15 +100,15 @@ A single exercise within a workout. Preserves the order exercises were added.
 |-----------------|---------|--------------|-------------------------------------------------|
 | `id`            | TEXT    | PK, NOT NULL | Random UUID                                     |
 | `workoutId`     | TEXT    | NOT NULL, FK | → `WorkoutEntity.id` CASCADE DELETE             |
-| `exerciseId`    | TEXT    | NOT NULL     | Key into the static `ExerciseCatalog`           |
-| `exerciseName`  | TEXT    | NOT NULL     | Name snapshot — survives catalog changes        |
+| `exerciseId`    | TEXT    | NOT NULL     | Key into `ExerciseEntity` (no FK — see note)    |
+| `exerciseName`  | TEXT    | NOT NULL     | Name snapshot at log time                       |
 | `orderIndex`    | INTEGER | NOT NULL     | 0-based position within the workout             |
 
 **Index:** `exercise_entry_workout (workoutId, orderIndex)` — covers `selectForWorkout` and `nextOrderIndex`.
 
 **Queries:** `insert`, `delete`, `selectForWorkout`, `nextOrderIndex`
 
-> `exerciseName` is snapshotted from the catalog at log time so historical workouts remain accurate even if the catalog is updated.
+> `exerciseId` intentionally has no FK constraint on `ExerciseEntity`. The name is snapshotted into `exerciseName` at log time so historical workouts remain accurate even if an exercise is renamed or removed from the catalog.
 
 ---
 
@@ -99,7 +127,7 @@ One row per set within an exercise entry. Weight is always stored in kg; the UI 
 
 **Index:** `set_entry_exercise (exerciseEntryId, setNumber)` — covers `selectForExerciseEntry` and `nextSetNumber`.
 
-**Queries:** `insert`, `update`, `delete`, `selectForExerciseEntry`, `nextSetNumber`
+**Queries:** `insert`, `update`, `delete`, `selectForExerciseEntry`, `nextSetNumber`, `selectForWorkout`
 
 ---
 
@@ -107,12 +135,17 @@ One row per set within an exercise entry. Weight is always stored in kg; the UI 
 
 | Decision | Rationale |
 |---|---|
+| `ExerciseEntity` in DB, not static in-memory | Enables backend updates without app releases; foundation for user-created exercises |
+| Pipe-separated `secondaryMuscles` / `instructions` | Avoids join tables for simple list fields; safe because neither field contains `\|` |
+| `catalogVersion` on `ExerciseEntity` | Backend sync can compare versions and upsert only changed rows |
+| `isCustom` flag | User-created exercises survive backend sync; built-in exercises can be overwritten |
+| `exerciseName` snapshotted on `ExerciseEntryEntity` | Historical workouts are accurate even after catalog updates or renames |
+| No FK from `ExerciseEntryEntity.exerciseId` → `ExerciseEntity` | Intentional — allows deleting/renaming catalog entries without breaking history |
 | `startedAt` (epoch ms) alongside `date` (ISO string) | `date` is used for calendar/streak logic; `startedAt` gives precise ordering when multiple workouts happen the same day |
 | `totalVolumeKg` stored on `WorkoutEntity` | Avoids re-aggregating across all sets on every home screen load; computed once at finish time |
-| `exerciseName` snapshotted on `ExerciseEntryEntity` | The exercise catalog is static but may be updated; snapshots ensure historical accuracy |
 | All IDs are `TEXT` (UUID) | Consistent with Firebase document IDs; simplifies future sync |
 | Weight stored in kg only | Single source of truth; unit conversion happens in the UI layer based on `UserEntity.units` |
-| Cascade deletes on all FKs | Simplifies discard-workout logic — one `DELETE` on `WorkoutEntity` cleans up the entire tree |
+| Cascade deletes on all workout-tree FKs | Simplifies discard-workout logic — one `DELETE` on `WorkoutEntity` cleans up the entire tree |
 
 ---
 
@@ -120,6 +153,7 @@ One row per set within an exercise entry. Weight is always stored in kg; the UI 
 
 ```
 shared/src/commonMain/sqldelight/com/harsh/fittrack/db/
+├── Exercise.sq
 ├── User.sq
 ├── Workout.sq
 ├── ExerciseEntry.sq

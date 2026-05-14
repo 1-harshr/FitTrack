@@ -4,13 +4,13 @@ import com.harsh.fittrack.core.time.Clock
 import com.harsh.fittrack.core.time.SystemClock
 import com.harsh.fittrack.core.util.GreetingProvider
 import com.harsh.fittrack.data.local.DatabaseFactory
-import com.harsh.fittrack.data.local.catalog.StaticExerciseCatalog
 import com.harsh.fittrack.data.repository.AuthRepositoryImpl
+import com.harsh.fittrack.data.repository.ExerciseRepositoryImpl
 import com.harsh.fittrack.data.repository.UserRepositoryImpl
 import com.harsh.fittrack.data.repository.WorkoutRepositoryImpl
 import com.harsh.fittrack.db.FitTrackDatabase
 import com.harsh.fittrack.domain.repository.AuthRepository
-import com.harsh.fittrack.domain.repository.ExerciseCatalog
+import com.harsh.fittrack.domain.repository.ExerciseRepository
 import com.harsh.fittrack.domain.repository.UserRepository
 import com.harsh.fittrack.domain.repository.WorkoutRepository
 import com.harsh.fittrack.domain.usecase.record.ValidateWorkoutUseCase
@@ -46,9 +46,9 @@ val sharedModule: Module = module {
     single<FirebaseAuth> { Firebase.auth }
 
     // --- data sources & repositories ---
-    single<ExerciseCatalog> { StaticExerciseCatalog() }
+    single<ExerciseRepository> { ExerciseRepositoryImpl(db = get()) }
     single<AuthRepository> { AuthRepositoryImpl(firebaseAuth = get(), credentials = get()) }
-    single<UserRepository> { UserRepositoryImpl() }
+    single<UserRepository> { UserRepositoryImpl(firebaseAuth = get(), db = get()) }
     single<WorkoutRepository> { WorkoutRepositoryImpl(db = get()) }
 
     // --- use cases ---
@@ -57,8 +57,8 @@ val sharedModule: Module = module {
     // --- view models ---
     factory { AuthViewModel(authRepository = get()) }
     factory { HomeViewModel(userRepository = get(), workoutRepository = get(), greetingProvider = get(), clock = get()) }
-    factory { RecordViewModel(workoutRepository = get(), catalog = get(), validateWorkout = get(), clock = get()) }
-    factory { ExercisesViewModel(catalog = get()) }
+    factory { RecordViewModel(workoutRepository = get(), exerciseRepository = get(), validateWorkout = get(), clock = get()) }
+    factory { ExercisesViewModel(exerciseRepository = get()) }
     factory { (workoutId: String) -> WorkoutDetailViewModel(workoutId = workoutId, workoutRepository = get()) }
     factory { ProfileViewModel(userRepository = get(), workoutRepository = get(), authRepository = get(), clock = get()) }
 }

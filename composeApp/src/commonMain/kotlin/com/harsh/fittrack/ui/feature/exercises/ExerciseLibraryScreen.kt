@@ -116,8 +116,8 @@ fun ExerciseLibraryScreen(
             // ── Training focus cards ──────────────────────────────────────
             item {
                 TrainingFocusSection(
-                    strengthCount = vm.strengthCount,
-                    cardioCount = vm.cardioCount,
+                    strengthCount = state.strengthCount,
+                    cardioCount = state.cardioCount,
                     modifier = Modifier
                         .padding(horizontal = FitTrackTheme.spacing.containerMargin)
                         .padding(top = FitTrackTheme.spacing.lg),
