@@ -2,12 +2,12 @@
 
 ## Overview
 
-Single Ktor JVM monolith. All state lives in PostgreSQL. Firebase handles auth — the server only verifies tokens, never issues them.
+Single Ktor JVM monolith. All state lives in PostgreSQL. The server issues and verifies **JWT tokens** using email/password credentials — no Firebase dependency.
 
 **Module:** `:server`  
 **Runtime:** Ktor 3.4 on Netty  
 **Database:** PostgreSQL 16 via Exposed ORM + HikariCP  
-**Auth:** Firebase Admin SDK (server-side ID token verification)  
+**Auth:** JWT (auth0/java-jwt) — server issues tokens on `/auth/login`  
 **Serialization:** kotlinx.serialization JSON  
 **DI:** Koin  
 
@@ -18,7 +18,7 @@ Single Ktor JVM monolith. All state lives in PostgreSQL. Firebase handles auth �
 ```
 client ──► Ktor (Netty)
               │
-              ├── plugins/Authentication   ← Firebase token → FirebasePrincipal
+              ├── plugins/Authentication   ← JWT bearer token → JWTPrincipal
               ├── plugins/Serialization    ← kotlinx.json content negotiation
               ├── plugins/StatusPages      ← unified error responses
               │
@@ -102,15 +102,32 @@ CREATE INDEX idx_exercises_version   ON exercises(catalog_version);
 
 ## API Contract
 
-**Base URL:** `https://api.fittrack.app/v1`  
-**Auth header:** `Authorization: Bearer <firebase_id_token>`  
+**Base URL:** `http://localhost:8080` (local) / `https://api.fittrack.app` (production)  
+**Auth header:** `Authorization: Bearer <jwt_token>` — obtain from `POST /auth/login`  
 All timestamps in responses are ISO-8601. All weights in **kg**.
 
+### `POST /auth/register`
+Register a new user with email and password.
+```json
+{ "email": "user@example.com", "password": "s3cret", "name": "Harsh Ranjan" }
+```
+Returns `201 Created` with the user object and a JWT token.
+
+### `POST /auth/login`
+Authenticate and receive a JWT token.
+```json
+{ "email": "user@example.com", "password": "s3cret" }
+```
+Returns:
+```json
+{ "token": "<jwt>", "user": { ... } }
+```
+
 ### `GET /me`
-Returns the authenticated user's profile. Creates the user row if it doesn't exist yet (first login).
+Returns the authenticated user's profile.
 ```json
 {
-  "id": "firebase_uid",
+  "id": "uuid",
   "name": "Harsh Ranjan",
   "email": "harsh@example.com",
   "photoUrl": "https://...",
@@ -223,7 +240,7 @@ server/src/main/kotlin/com/harsh/fittrack/
 ├── Application.kt
 ├── di/AppModule.kt
 ├── plugins/
-│   ├── Authentication.kt   ← Firebase bearer token validation
+│   ├── Authentication.kt   ← JWT bearer token validation
 │   ├── Database.kt         ← HikariCP + Exposed setup + schema creation
 │   ├── Routing.kt          ← Mounts all feature routes
 │   ├── Serialization.kt    ← kotlinx.json content negotiation
@@ -245,20 +262,18 @@ server/src/main/kotlin/com/harsh/fittrack/
 
 ## Running Locally
 
-```bash
-# Start PostgreSQL
-docker run -d --name fittrack-db \
-  -e POSTGRES_DB=fittrack \
-  -e POSTGRES_USER=fittrack \
-  -e POSTGRES_PASSWORD=secret \
-  -p 5432:5432 postgres:16
+See the main [README](../README.md) for full setup instructions.
 
-# Set env vars
+```bash
+# Option A — start everything with Docker Compose
+docker compose up --build
+
+# Option B — start only the database, run server via Gradle
+docker compose up db
 export DB_URL=jdbc:postgresql://localhost:5432/fittrack
 export DB_USER=fittrack
 export DB_PASSWORD=secret
-export GOOGLE_APPLICATION_CREDENTIALS=/path/to/firebase-service-account.json
-
+export JWT_SECRET=changeme
 ./gradlew :server:run
 ```
 
@@ -267,8 +282,9 @@ export GOOGLE_APPLICATION_CREDENTIALS=/path/to/firebase-service-account.json
 ```bash
 docker build -t fittrack-server .
 docker run -p 8080:8080 \
-  -e DB_URL=... -e DB_USER=... -e DB_PASSWORD=... \
-  -e GOOGLE_APPLICATION_CREDENTIALS=/creds.json \
-  -v /path/to/creds.json:/creds.json \
+  -e DB_URL=jdbc:postgresql://host:5432/fittrack \
+  -e DB_USER=fittrack \
+  -e DB_PASSWORD=secret \
+  -e JWT_SECRET=changeme \
   fittrack-server
 ```
