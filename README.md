@@ -6,11 +6,24 @@ A Kotlin Multiplatform fitness tracking app targeting **Android**, **iOS**, and 
 
 ## Screenshots
 
-> _Add screenshots to `docs/screenshots/` and update the paths below._
+<table>
+  <tr>
+    <td align="center"><b>Splash</b></td>
+    <td align="center"><b>Sign Up</b></td>
+    <td align="center"><b>Login</b></td>
+    <td align="center"><b>Profile</b></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/splash.png" width="180"/></td>
+    <td><img src="docs/screenshots/signup.png" width="180"/></td>
+    <td><img src="docs/screenshots/login.png" width="180"/></td>
+    <td><img src="docs/screenshots/profile.png" width="180"/></td>
+  </tr>
+</table>
 
-| Home | Workouts | Log Workout | Profile |
-|------|----------|-------------|---------|
-| ![Home](docs/screenshots/home.png) | ![Workouts](docs/screenshots/workouts.png) | ![Log Workout](docs/screenshots/log_workout.png) | ![Profile](docs/screenshots/profile.png) |
+### App Flow
+
+<video src="docs/screenshots/flow.webm" width="360" controls></video>
 
 ---
 
