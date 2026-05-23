@@ -9,9 +9,14 @@
     <string name="splash_tagline">PEAK PERFORMANCE ENGINE</string>
     <string name="splash_version">V 1.0 · STAGE ALPHA</string>
 
-    <!-- Login -->
-    <string name="login_continue_with_google">Continue with Google</string>
-    <string name="login_continue_with_apple">Continue with Apple</string>
+    <!-- Login / Register -->
+    <string name="login_email">Email</string>
+    <string name="login_password">Password</string>
+    <string name="login_name">Name</string>
+    <string name="login_sign_in">Sign In</string>
+    <string name="login_create_account">Create Account</string>
+    <string name="login_switch_to_register">No account yet? Sign up</string>
+    <string name="login_switch_to_login">Already have an account? Sign in</string>
     <string name="login_legal_footer">By continuing you agree to our Terms of Service and Privacy Policy</string>
 
     <!-- Stat card labels -->

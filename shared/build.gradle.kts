@@ -27,21 +27,22 @@ kotlin {
             implementation(libs.kotlinx.datetime)
             implementation(libs.sqldelight.runtime)
             implementation(libs.sqldelight.coroutines)
-
-            // GitLive Firebase Kotlin SDK — multiplatform wrapper over the native Firebase Auth SDKs.
-            // Provides FirebaseAuth, AuthCredential, GoogleAuthProvider, OAuthProvider, etc. in commonMain.
-            // Platform credential acquisition (Google ID token on Android, ASAuthorization on iOS)
-            // is wired through OAuthCredentialProvider implementations in the respective sourceSets.
-            implementation(libs.firebase.gitlive.auth)
+            // Ktor client — core + content negotiation (engine provided per platform below)
+            implementation(libs.ktor.clientCore)
+            implementation(libs.ktor.clientContentNegotiation)
+            implementation(libs.ktor.clientKotlinxJson)
         }
         androidMain.dependencies {
             implementation(libs.sqldelight.android.driver)
-            implementation(libs.androidx.credentials)
-            implementation(libs.androidx.credentials.playServicesAuth)
-            implementation(libs.googleid)
+            implementation(libs.ktor.clientOkhttp)
         }
         iosMain.dependencies {
             implementation(libs.sqldelight.native.driver)
+            implementation(libs.ktor.clientDarwin)
+        }
+        jvmMain.dependencies {
+            implementation(libs.ktor.clientCio)
+            implementation(libs.sqldelight.sqlite.driver)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -53,6 +54,9 @@ sqldelight {
     databases {
         create("FitTrackDatabase") {
             packageName.set("com.harsh.fittrack.db")
+            schemaOutputDirectory.set(file("src/commonMain/sqldelight/databases"))
+            migrationOutputDirectory.set(file("src/commonMain/sqldelight/migrations"))
+            verifyMigrations.set(false)
         }
     }
 }

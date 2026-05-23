@@ -1,0 +1,62 @@
+version: "3.9"
+
+# ── FitTrack local development stack ─────────────────────────────────────────
+#
+#  Start everything:
+#    docker compose up --build
+#
+#  Start only the database (run server from IntelliJ / Gradle):
+#    docker compose up db
+#
+#  Tear down and wipe data:
+#    docker compose down -v
+#
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+
+  # ── PostgreSQL ──────────────────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       fittrack
+      POSTGRES_USER:     fittrack
+      POSTGRES_PASSWORD: secret
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fittrack -d fittrack"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ── Ktor server ─────────────────────────────────────────────────────────────
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      PORT:        8080
+      DB_URL:      jdbc:postgresql://db:5432/fittrack
+      DB_USER:     fittrack
+      DB_PASSWORD: secret
+      # Set GOOGLE_APPLICATION_CREDENTIALS to a mounted service-account JSON to
+      # enable Firebase token verification. Without it the server starts but all
+      # authenticated endpoints return 401.
+      #
+      # Example (mount the file as a volume below and uncomment):
+      # GOOGLE_APPLICATION_CREDENTIALS: /secrets/serviceAccountKey.json
+    # volumes:
+    #   - ./serviceAccountKey.json:/secrets/serviceAccountKey.json:ro
+
+volumes:
+  postgres_data:

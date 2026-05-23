@@ -16,5 +16,11 @@ SELECT * FROM UserEntity WHERE id = ?;
 setUnits:
 UPDATE UserEntity SET units = ? WHERE id = ?;
 
+selectAll:
+SELECT * FROM UserEntity LIMIT 1;
+
+setUnitsForAll:
+UPDATE UserEntity SET units = ?;
+
 deleteAll:
 DELETE FROM UserEntity;

@@ -23,18 +23,24 @@ class AuthViewModel(
         }
     }
 
-    fun signInWithGoogle() {
+    fun login(email: String, password: String) {
+        _state.value = AuthState.Loading
         viewModelScope.launch {
-            authRepository.signInWithGoogle()
-                .onFailure { _state.value = AuthState.Error(it.message ?: "Sign-in failed") }
+            authRepository.login(email.trim(), password)
+                .onFailure { _state.value = AuthState.Error(it.message ?: "Login failed") }
         }
     }
 
-    fun signInWithApple() {
+    fun register(name: String, email: String, password: String) {
+        _state.value = AuthState.Loading
         viewModelScope.launch {
-            authRepository.signInWithApple()
-                .onFailure { _state.value = AuthState.Error(it.message ?: "Sign-in failed") }
+            authRepository.register(name.trim(), email.trim(), password)
+                .onFailure { _state.value = AuthState.Error(it.message ?: "Registration failed") }
         }
+    }
+
+    fun clearError() {
+        if (_state.value is AuthState.Error) _state.value = AuthState.SignedOut
     }
 
     fun signOut() {

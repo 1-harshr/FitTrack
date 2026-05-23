@@ -1,12 +1,11 @@
 import SwiftUI
-import FirebaseCore
 import ComposeApp
 
 @main
 struct iOSApp: App {
+
     init() {
-        FirebaseApp.configure()
-        MainViewControllerKt.initKoinIos()
+        MainViewControllerKt.startKoinIos(apiBaseUrl: "http://localhost:8080")
     }
 
     var body: some Scene {
