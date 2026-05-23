@@ -179,4 +179,64 @@ class HomeViewModelTest {
         assertEquals("", state.firstName)
         assertEquals(0, state.totalWorkouts)
     }
+
+    @Test
+    fun `greeting at midnight is Good evening`() = runTest {
+        val clock = FakeClock(hour = 0)
+        val vm = buildVm(clock = clock)
+        advanceUntilIdle()
+        assertEquals("Good evening", vm.state.value.greeting)
+    }
+
+    @Test
+    fun `greeting at noon (12) is Good afternoon`() = runTest {
+        val clock = FakeClock(hour = 12)
+        val vm = buildVm(clock = clock)
+        advanceUntilIdle()
+        assertEquals("Good afternoon", vm.state.value.greeting)
+    }
+
+    @Test
+    fun `greeting at 17 is Good afternoon`() = runTest {
+        val clock = FakeClock(hour = 17)
+        val vm = buildVm(clock = clock)
+        advanceUntilIdle()
+        assertEquals("Good afternoon", vm.state.value.greeting)
+    }
+
+    @Test
+    fun `greeting at 18 is Good evening`() = runTest {
+        val clock = FakeClock(hour = 18)
+        val vm = buildVm(clock = clock)
+        advanceUntilIdle()
+        assertEquals("Good evening", vm.state.value.greeting)
+    }
+
+    @Test
+    fun `firstName with single-word name uses the full name`() = runTest {
+        val userRepo = FakeUserRepository(testUser.copy(name = "Cher"))
+        val vm = buildVm(userRepo = userRepo)
+        advanceUntilIdle()
+        assertEquals("Cher", vm.state.value.firstName)
+    }
+
+    @Test
+    fun `firstName ignores extra leading and trailing spaces`() = runTest {
+        val userRepo = FakeUserRepository(testUser.copy(name = "  Alice  "))
+        val vm = buildVm(userRepo = userRepo)
+        advanceUntilIdle()
+        assertEquals("Alice", vm.state.value.firstName)
+    }
+
+    @Test
+    fun `state updates live when user emits new value`() = runTest {
+        val userRepo = FakeUserRepository(testUser)
+        val vm = buildVm(userRepo = userRepo)
+        advanceUntilIdle()
+        assertEquals("John", vm.state.value.firstName)
+
+        userRepo.emit(testUser.copy(name = "Jane Smith"))
+        advanceUntilIdle()
+        assertEquals("Jane", vm.state.value.firstName)
+    }
 }

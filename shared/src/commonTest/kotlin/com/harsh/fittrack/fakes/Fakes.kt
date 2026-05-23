@@ -1,6 +1,13 @@
 package com.harsh.fittrack.fakes
 
 import com.harsh.fittrack.core.time.Clock
+import com.harsh.fittrack.data.remote.ApiAuthResponse
+import com.harsh.fittrack.data.remote.ApiExerciseSyncResponse
+import com.harsh.fittrack.data.remote.ApiSyncStatusResponse
+import com.harsh.fittrack.data.remote.ApiUser
+import com.harsh.fittrack.data.remote.ApiWorkout
+import com.harsh.fittrack.data.remote.ApiWorkoutListResponse
+import com.harsh.fittrack.data.remote.FitTrackApi
 import com.harsh.fittrack.domain.model.Equipment
 import com.harsh.fittrack.domain.model.Exercise
 import com.harsh.fittrack.domain.model.ExerciseEntry
@@ -214,6 +221,51 @@ class FakeExerciseRepository(initial: List<Exercise> = emptyList()) : ExerciseRe
 
     fun emit(exercises: List<Exercise>) { _exercises.value = exercises }
 }
+
+// ── Fake API ─────────────────────────────────────────────────────────────────
+
+class FakeApi : FitTrackApi {
+    var loginResponse: ApiAuthResponse? = null
+    var registerResponse: ApiAuthResponse? = null
+    var getMeResponse: ApiUser? = null
+    var patchMeResponse: ApiUser? = null
+    var getExercisesResponse: ApiExerciseSyncResponse? = null
+    var getWorkoutsResponse: ApiWorkoutListResponse? = null
+    var postWorkoutResponse: ApiWorkout? = null
+    var patchWorkoutResponse: ApiWorkout? = null
+    var getSyncStatusResponse: ApiSyncStatusResponse? = null
+
+    var patchMeThrows = false
+    var patchMeCalledWith: String? = null
+    var deleteWorkoutCalledWith: String? = null
+
+    override suspend fun login(email: String, password: String) = loginResponse
+    override suspend fun register(name: String, email: String, password: String) = registerResponse
+    override suspend fun getMe() = getMeResponse
+    override suspend fun patchMe(units: String): ApiUser? {
+        patchMeCalledWith = units
+        if (patchMeThrows) throw RuntimeException("Network error")
+        return patchMeResponse
+    }
+    override suspend fun getExercises(sinceVersion: Int) = getExercisesResponse
+    override suspend fun getWorkouts(cursor: String?, limit: Int) = getWorkoutsResponse
+    override suspend fun postWorkout(workout: ApiWorkout) = postWorkoutResponse
+    override suspend fun patchWorkout(id: String, title: String) = patchWorkoutResponse
+    override suspend fun deleteWorkout(id: String) { deleteWorkoutCalledWith = id }
+    override suspend fun getSyncStatus() = getSyncStatusResponse
+}
+
+fun fakeApiUser(
+    id: String = "u-1",
+    name: String = "Test User",
+    email: String = "test@example.com",
+    units: String = "KG",
+) = ApiUser(id = id, name = name, email = email, photoUrl = null, units = units)
+
+fun fakeApiAuthResponse(
+    token: String = "jwt-token",
+    user: ApiUser = fakeApiUser(),
+) = ApiAuthResponse(token = token, user = user)
 
 // ── Fake clock ───────────────────────────────────────────────────────────────
 

@@ -209,4 +209,57 @@ class ProfileViewModelTest {
 
         assertTrue(authRepo.signOutCalled)
     }
+
+    @Test
+    fun `totalVolumeKg is zero when all workouts have zero volume`() = runTest {
+        val workoutRepo = FakeWorkoutRepository()
+        workoutRepo.setWorkoutsForUser(
+            testUser.id,
+            listOf(
+                testWorkout("w1", isCompleted = true, volumeKg = 0.0),
+                testWorkout("w2", isCompleted = true, volumeKg = 0.0),
+            ),
+        )
+        val vm = buildVm(workoutRepo = workoutRepo)
+        advanceUntilIdle()
+        assertEquals(0.0, vm.state.value.totalVolumeKg)
+    }
+
+    @Test
+    fun `totalVolumeThisMonthKg excludes workouts from a different year same month`() = runTest {
+        val clock = FakeClock(year = 2026, month = 5, day = 23)
+        val workoutRepo = FakeWorkoutRepository()
+        workoutRepo.setWorkoutsForUser(
+            testUser.id,
+            listOf(
+                testWorkout("w1", date = "2026-05-10", volumeKg = 200.0), // this year + month
+                testWorkout("w2", date = "2025-05-10", volumeKg = 999.0), // previous year same month
+            ),
+        )
+        val vm = buildVm(workoutRepo = workoutRepo, clock = clock)
+        advanceUntilIdle()
+        assertEquals(200.0, vm.state.value.totalVolumeThisMonthKg)
+    }
+
+    @Test
+    fun `state reflects no workouts for a different user`() = runTest {
+        val workoutRepo = FakeWorkoutRepository()
+        // workouts stored under different userId
+        workoutRepo.setWorkoutsForUser("other-user", listOf(testWorkout("w1")))
+        val vm = buildVm(workoutRepo = workoutRepo)
+        advanceUntilIdle()
+        assertEquals(0, vm.state.value.totalWorkouts)
+    }
+
+    @Test
+    fun `toggleUnits with null user state still toggles correctly`() = runTest {
+        // units defaults to KG when user is null
+        val vm = buildVm(userRepo = FakeUserRepository(null))
+        advanceUntilIdle()
+        assertEquals(Units.KG, vm.state.value.units)
+
+        vm.toggleUnits()
+        advanceUntilIdle()
+        assertEquals(Units.LBS, vm.state.value.units)
+    }
 }
