@@ -33,7 +33,7 @@ sealed interface Route {
     @Serializable data object ExerciseLibrary : Route
     @Serializable data class ExerciseDetail(
         val exerciseId: String,
-        val source: ExerciseDetailSource,
+        val source: String,
     ) : Route
 
     // Profile tab

@@ -65,4 +65,47 @@ class CalculateWeeklyWorkoutsUseCaseTest {
         val workouts = (18..24).map { day -> workout("2026-05-$day") }
         assertEquals(7, useCase(workouts, today))
     }
+
+    @Test
+    fun `today is Monday - only Monday workout counts`() {
+        // 2026-05-18 is Monday; daysFromMonday = 0, so weekStart == today
+        val today = LocalDate.parse("2026-05-18")
+        val workouts = listOf(
+            workout("2026-05-18"), // this Monday
+            workout("2026-05-17"), // Sunday of previous week — excluded
+        )
+        assertEquals(1, useCase(workouts, today))
+    }
+
+    @Test
+    fun `today is Sunday - full Mon–Sun week counted`() {
+        val today = LocalDate.parse("2026-05-24") // Sunday
+        val workouts = listOf(
+            workout("2026-05-18"), // Mon
+            workout("2026-05-24"), // Sun (today)
+            workout("2026-05-17"), // previous Sunday — excluded
+        )
+        assertEquals(2, useCase(workouts, today))
+    }
+
+    @Test
+    fun `multiple workouts on same day each count separately`() {
+        val today = LocalDate.parse("2026-05-22")
+        val workouts = listOf(
+            workout("2026-05-20"),
+            workout("2026-05-20"), // duplicate day — each workout is its own record
+        )
+        assertEquals(2, useCase(workouts, today))
+    }
+
+    @Test
+    fun `future workouts beyond today are excluded`() {
+        val today = LocalDate.parse("2026-05-20")
+        val workouts = listOf(
+            workout("2026-05-20"), // today — included
+            workout("2026-05-21"), // tomorrow — excluded
+            workout("2026-05-22"), // day after — excluded
+        )
+        assertEquals(1, useCase(workouts, today))
+    }
 }

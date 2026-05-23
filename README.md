@@ -1,54 +1,175 @@
-This is a Kotlin Multiplatform project targeting Android, iOS, Server.
+# FitTrack
 
-* [/composeApp](./composeApp/src) is for code that will be shared across your Compose Multiplatform applications.
-  It contains several subfolders:
-  - [commonMain](./composeApp/src/commonMain/kotlin) is for code that’s common for all targets.
-  - Other folders are for Kotlin code that will be compiled for only the platform indicated in the folder name.
-    For example, if you want to use Apple’s CoreCrypto for the iOS part of your Kotlin app,
-    the [iosMain](./composeApp/src/iosMain/kotlin) folder would be the right place for such calls.
-    Similarly, if you want to edit the Desktop (JVM) specific part, the [jvmMain](./composeApp/src/jvmMain/kotlin)
-    folder is the appropriate location.
-
-* [/iosApp](./iosApp/iosApp) contains iOS applications. Even if you’re sharing your UI with Compose Multiplatform,
-  you need this entry point for your iOS app. This is also where you should add SwiftUI code for your project.
-
-* [/server](./server/src/main/kotlin) is for the Ktor server application.
-
-* [/shared](./shared/src) is for the code that will be shared between all targets in the project.
-  The most important subfolder is [commonMain](./shared/src/commonMain/kotlin). If preferred, you
-  can add code to the platform-specific folders here too.
-
-### Build and Run Android Application
-
-To build and run the development version of the Android app, use the run configuration from the run widget
-in your IDE’s toolbar or build it directly from the terminal:
-- on macOS/Linux
-  ```shell
-  ./gradlew :composeApp:assembleDebug
-  ```
-- on Windows
-  ```shell
-  .\gradlew.bat :composeApp:assembleDebug
-  ```
-
-### Build and Run Server
-
-To build and run the development version of the server, use the run configuration from the run widget
-in your IDE’s toolbar or run it directly from the terminal:
-- on macOS/Linux
-  ```shell
-  ./gradlew :server:run
-  ```
-- on Windows
-  ```shell
-  .\gradlew.bat :server:run
-  ```
-
-### Build and Run iOS Application
-
-To build and run the development version of the iOS app, use the run configuration from the run widget
-in your IDE’s toolbar or open the [/iosApp](./iosApp) directory in Xcode and run it from there.
+A Kotlin Multiplatform fitness tracking app targeting **Android**, **iOS**, and a **Ktor backend server** backed by PostgreSQL.
 
 ---
 
-Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html)…
+## Screenshots
+
+> _Add screenshots to `docs/screenshots/` and update the paths below._
+
+| Home | Workouts | Log Workout | Profile |
+|------|----------|-------------|---------|
+| ![Home](docs/screenshots/home.png) | ![Workouts](docs/screenshots/workouts.png) | ![Log Workout](docs/screenshots/log_workout.png) | ![Profile](docs/screenshots/profile.png) |
+
+---
+
+## Project Structure
+
+| Module | Description |
+|--------|-------------|
+| [`/composeApp`](./composeApp/src) | Shared Compose Multiplatform UI (Android + iOS) |
+| [`/iosApp`](./iosApp) | iOS app entry point (Xcode / SwiftUI shell) |
+| [`/server`](./server/src/main/kotlin) | Ktor JVM backend server |
+| [`/shared`](./shared/src) | Shared business logic, models, and database (SQLDelight) |
+
+---
+
+## Prerequisites
+
+- **JDK 17+**
+- **Android Studio** (Hedgehog or newer) with KMP plugin
+- **Xcode 15+** (for iOS)
+- **Docker & Docker Compose** (for running the server + database locally)
+
+---
+
+## Running the Backend Server
+
+### Option A — Docker Compose (recommended)
+
+Starts the Ktor server and a PostgreSQL 16 database together:
+
+```shell
+docker compose up --build
+```
+
+The server will be available at `http://localhost:8080`.
+
+To start only the database (and run the server from your IDE / Gradle):
+
+```shell
+docker compose up db
+```
+
+To tear down and wipe all data:
+
+```shell
+docker compose down -v
+```
+
+### Option B — Gradle (database must be running separately)
+
+1. Start the database:
+   ```shell
+   docker compose up db
+   ```
+
+2. Run the server:
+   ```shell
+   # macOS / Linux
+   ./gradlew :server:run
+
+   # Windows
+   .\gradlew.bat :server:run
+   ```
+
+The server reads the following environment variables (defaults shown):
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PORT` | `8080` | HTTP port the server listens on |
+| `DB_URL` | `jdbc:postgresql://localhost:5432/fittrack` | JDBC connection URL |
+| `DB_USER` | `fittrack` | Database user |
+| `DB_PASSWORD` | `secret` | Database password |
+| `JWT_SECRET` | _(required)_ | Secret key used to sign/verify JWT tokens |
+
+---
+
+## API Endpoints
+
+All authenticated routes require a `Bearer` JWT token in the `Authorization` header obtained from `/auth/login`.
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `POST` | `/auth/register` | No | Register a new user |
+| `POST` | `/auth/login` | No | Login and receive a JWT token |
+| `GET` | `/me` | Yes | Get current user profile |
+| `PATCH` | `/me` | Yes | Update current user profile |
+| `GET` | `/exercises` | Yes | List all exercises |
+| `GET` | `/workouts` | Yes | List user workouts |
+| `POST` | `/workouts` | Yes | Create a new workout |
+| `GET` | `/workouts/{id}` | Yes | Get a specific workout |
+| `PUT` | `/workouts/{id}` | Yes | Update a workout |
+| `DELETE` | `/workouts/{id}` | Yes | Soft-delete a workout |
+| `GET` | `/sync/status` | Yes | Get sync status for the user |
+
+---
+
+## Building the Android App
+
+```shell
+# macOS / Linux
+./gradlew :composeApp:assembleDebug
+
+# Windows
+.\gradlew.bat :composeApp:assembleDebug
+```
+
+Install directly on a connected device or emulator:
+
+```shell
+./gradlew :composeApp:installDebug
+```
+
+---
+
+## Building the iOS App
+
+1. Open the [`/iosApp`](./iosApp) directory in Xcode.
+2. Select your simulator or device.
+3. Press **Run** (`Cmd+R`).
+
+Alternatively, build the shared KMP framework first:
+
+```shell
+./gradlew :shared:assembleXCFramework
+```
+
+---
+
+## Running Tests
+
+```shell
+# All tests
+./gradlew test
+
+# Server tests only
+./gradlew :server:test
+
+# Shared unit tests
+./gradlew :shared:jvmTest
+```
+
+---
+
+## Further Documentation
+
+- [`docs/BACKEND.md`](docs/BACKEND.md) — Server architecture and design
+- [`docs/DATABASE.md`](docs/DATABASE.md) — Local database schema (SQLDelight)
+- [`docs/DESIGN.md`](docs/DESIGN.md) — App design decisions
+- [`docs/TESTING.md`](docs/TESTING.md) — Testing strategy
+- [`docs/PRD.md`](docs/PRD.md) — Product requirements
+
+---
+
+## Tech Stack
+
+- **Kotlin Multiplatform** — shared code across Android, iOS, and server
+- **Compose Multiplatform** — shared UI
+- **Ktor 3** — backend HTTP server (Netty)
+- **PostgreSQL 16** — server-side database
+- **SQLDelight 2** — local database (Android + iOS)
+- **Koin** — dependency injection
+- **kotlinx.serialization** — JSON serialization
+- **JWT (auth0/java-jwt)** — authentication tokens

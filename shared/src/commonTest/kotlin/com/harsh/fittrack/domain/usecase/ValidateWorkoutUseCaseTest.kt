@@ -91,4 +91,62 @@ class ValidateWorkoutUseCaseTest {
         val result = useCase(listOf(ExerciseWithSets(entry = e, sets = listOf(set(e.id, -1)))))
         assertIs<WorkoutValidationResult.Invalid>(result)
     }
+
+    @Test
+    fun `reps of 1 is the minimum valid value`() {
+        val e = entry("Plank")
+        val result = useCase(listOf(ExerciseWithSets(entry = e, sets = listOf(set(e.id, 1)))))
+        assertIs<WorkoutValidationResult.Valid>(result)
+    }
+
+    @Test
+    fun `multiple sets in one exercise - only invalid set produces error`() {
+        val e = entry("Press")
+        val sets = listOf(
+            set(e.id, reps = 10).copy(id = "s1", setNumber = 1),
+            set(e.id, reps = 0).copy(id = "s2", setNumber = 2),  // invalid
+            set(e.id, reps = 8).copy(id = "s3", setNumber = 3),
+        )
+        val result = useCase(listOf(ExerciseWithSets(entry = e, sets = sets))) as WorkoutValidationResult.Invalid
+        assertEquals(1, result.errors.size)
+        val error = result.errors.first() as WorkoutValidationError.EmptySet
+        assertEquals(2, error.setNumber)
+    }
+
+    @Test
+    fun `all sets in exercise invalid produces error for each set`() {
+        val e = entry("Row")
+        val sets = listOf(
+            set(e.id, reps = 0).copy(id = "s1", setNumber = 1),
+            set(e.id, reps = 0).copy(id = "s2", setNumber = 2),
+        )
+        val result = useCase(listOf(ExerciseWithSets(entry = e, sets = sets))) as WorkoutValidationResult.Invalid
+        assertEquals(2, result.errors.size)
+    }
+
+    @Test
+    fun `multiple exercises with mixed validity accumulates all errors`() {
+        val e1 = entry("Squat", "sq")
+        val e2 = entry("Press", "pr")
+        val e3 = entry("Pull-up", "pu")
+        val exercises = listOf(
+            ExerciseWithSets(entry = e1, sets = listOf(set("sq", 5))),   // valid
+            ExerciseWithSets(entry = e2, sets = emptyList()),             // NoSets
+            ExerciseWithSets(entry = e3, sets = listOf(set("pu", 0))),   // EmptySet
+        )
+        val result = useCase(exercises) as WorkoutValidationResult.Invalid
+        assertEquals(2, result.errors.size)
+        assertIs<WorkoutValidationError.NoSets>(result.errors[0])
+        assertIs<WorkoutValidationError.EmptySet>(result.errors[1])
+    }
+
+    @Test
+    fun `valid workout with many exercises and sets returns Valid`() {
+        val exercises = (1..5).map { i ->
+            val e = entry("Exercise $i", "e$i")
+            val sets = (1..4).map { j -> set(e.id, reps = 10).copy(id = "s$i-$j", setNumber = j) }
+            ExerciseWithSets(entry = e, sets = sets)
+        }
+        assertIs<WorkoutValidationResult.Valid>(useCase(exercises))
+    }
 }

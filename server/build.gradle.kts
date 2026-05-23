@@ -46,5 +46,7 @@ dependencies {
 
     // Test
     testImplementation(libs.ktor.serverTestHost)
+    testImplementation(libs.ktor.clientContentNegotiation)
+    testImplementation(libs.ktor.clientKotlinxJson)
     testImplementation(libs.kotlin.testJunit)
 }
