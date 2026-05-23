@@ -6,30 +6,98 @@ import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
 import app.cash.sqldelight.coroutines.mapToOneOrNull
 import com.harsh.fittrack.data.local.mapper.toDomain
+import com.harsh.fittrack.data.remote.ApiExerciseEntry
+import com.harsh.fittrack.data.remote.ApiSetEntry
+import com.harsh.fittrack.data.remote.ApiWorkout
+import com.harsh.fittrack.data.remote.FitTrackApi
 import com.harsh.fittrack.db.FitTrackDatabase
 import com.harsh.fittrack.domain.model.SetEntry
 import com.harsh.fittrack.domain.model.Workout
 import com.harsh.fittrack.domain.repository.ExerciseWithSets
 import com.harsh.fittrack.domain.repository.WorkoutRepository
 import com.harsh.fittrack.domain.repository.WorkoutWithDetails
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlin.random.Random
 
 class WorkoutRepositoryImpl(
     private val db: FitTrackDatabase,
+    private val api: FitTrackApi,
 ) : WorkoutRepository {
 
     private val workoutQ get() = db.workoutQueries
     private val exerciseQ get() = db.exerciseEntryQueries
     private val setQ get() = db.setEntryQueries
     private val io = Dispatchers.Default
+
+    init {
+        // Pull completed workouts from the server on startup so a fresh install
+        // or re-login restores the user's history from the server.
+        CoroutineScope(io).launch { pullRemoteWorkouts() }
+    }
+
+    /**
+     * Fetches all pages of completed workouts from the server and merges them
+     * into the local SQLDelight database (insert-or-ignore to avoid overwriting
+     * any locally-recorded in-progress workouts).
+     */
+    private suspend fun pullRemoteWorkouts() {
+        runCatching {
+            var cursor: String? = null
+            do {
+                val page = api.getWorkouts(cursor = cursor, limit = 50) ?: break
+                page.workouts.forEach { remote ->
+                    // Only insert if not already present locally
+                    val alreadyExists = workoutQ.selectById(remote.id).executeAsOneOrNull() != null
+                    if (!alreadyExists) {
+                        workoutQ.insert(
+                            id = remote.id,
+                            userId = remote.userId,
+                            title = remote.title,
+                            date = remote.date,
+                            startedAt = remote.startedAt,
+                        )
+                        // Mark it completed with the server's authoritative values
+                        workoutQ.markCompleted(
+                            durationSeconds = remote.durationSeconds.toLong(),
+                            totalVolumeKg = remote.totalVolumeKg,
+                            id = remote.id,
+                        )
+                        // Restore exercises + sets
+                        remote.exercises.forEach { entry ->
+                            exerciseQ.insert(
+                                id = entry.id,
+                                workoutId = remote.id,
+                                exerciseId = entry.exerciseId,
+                                exerciseName = entry.exerciseName,
+                                orderIndex = entry.orderIndex.toLong(),
+                            )
+                            entry.sets.forEach { set ->
+                                setQ.insert(
+                                    id = set.id,
+                                    exerciseEntryId = entry.id,
+                                    setNumber = set.setNumber.toLong(),
+                                    reps = set.reps.toLong(),
+                                    weight = set.weightKg,
+                                    isCompleted = if (set.isCompleted) 1L else 0L,
+                                )
+                            }
+                        }
+                    }
+                }
+                cursor = page.nextCursor
+            } while (cursor != null)
+        }
+    }
 
     override fun observeWorkouts(userId: String): Flow<List<Workout>> =
         workoutQ.selectAllForUser(userId)
@@ -86,8 +154,13 @@ class WorkoutRepositoryImpl(
             id
         }
 
-    override suspend fun renameWorkout(workoutId: String, title: String) =
-        withContext(io) { workoutQ.updateTitle(title = title, id = workoutId) }
+    override suspend fun renameWorkout(workoutId: String, title: String) {
+        withContext(io) {
+            workoutQ.updateTitle(title = title, id = workoutId)
+            // Best-effort server sync so the server title stays in sync when online
+            runCatching { api.patchWorkout(workoutId, title) }
+        }
+    }
 
     override suspend fun finishWorkout(workoutId: String, durationSeconds: Long) =
         withContext(io) {
@@ -104,7 +177,42 @@ class WorkoutRepositoryImpl(
                 totalVolumeKg = totalVolumeKg,
                 id = workoutId,
             )
+            syncToServer(workoutId, durationSeconds, totalVolumeKg)
         }
+
+    private suspend fun syncToServer(workoutId: String, durationSeconds: Long, totalVolumeKg: Double) {
+        runCatching {
+            val workout = workoutQ.selectById(workoutId).executeAsOneOrNull() ?: return
+            val exercises = exerciseQ.selectForWorkout(workoutId).executeAsList()
+            val apiWorkout = ApiWorkout(
+                id = workout.id,
+                userId = workout.userId,
+                title = workout.title,
+                date = workout.date,
+                startedAt = workout.startedAt,
+                durationSeconds = durationSeconds.toInt(),
+                totalVolumeKg = totalVolumeKg,
+                exercises = exercises.map { e ->
+                    ApiExerciseEntry(
+                        id = e.id,
+                        exerciseId = e.exerciseId,
+                        exerciseName = e.exerciseName,
+                        orderIndex = e.orderIndex.toInt(),
+                        sets = setQ.selectForExerciseEntry(e.id).executeAsList().map { s ->
+                            ApiSetEntry(
+                                id = s.id,
+                                setNumber = s.setNumber.toInt(),
+                                reps = s.reps.toInt(),
+                                weightKg = s.weight,
+                                isCompleted = s.isCompleted != 0L,
+                            )
+                        },
+                    )
+                },
+            )
+            api.postWorkout(apiWorkout)
+        }
+    }
 
     override suspend fun discardWorkout(workoutId: String) =
         withContext(io) { workoutQ.delete(workoutId) }

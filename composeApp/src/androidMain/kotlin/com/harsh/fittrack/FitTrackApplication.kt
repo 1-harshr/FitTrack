@@ -12,12 +12,7 @@ class FitTrackApplication : Application() {
         initKoin {
             androidContext(this@FitTrackApplication)
             androidLogger()
-            modules(
-                androidModule(
-                    context = this@FitTrackApplication,
-                    webClientId = getString(R.string.firebase_web_client_id),
-                ),
-            )
+            modules(androidModule(context = this@FitTrackApplication))
         }
     }
 }

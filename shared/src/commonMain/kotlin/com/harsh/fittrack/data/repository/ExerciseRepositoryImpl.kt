@@ -7,6 +7,7 @@ import app.cash.sqldelight.coroutines.mapToList
 import com.harsh.fittrack.data.local.catalog.ExerciseSeed
 import com.harsh.fittrack.data.local.mapper.toDomain
 import com.harsh.fittrack.data.local.mapper.toEntity
+import com.harsh.fittrack.data.remote.FitTrackApi
 import com.harsh.fittrack.db.FitTrackDatabase
 import com.harsh.fittrack.domain.model.Exercise
 import com.harsh.fittrack.domain.model.MuscleGroup
@@ -20,13 +21,17 @@ import kotlinx.coroutines.withContext
 
 class ExerciseRepositoryImpl(
     private val db: FitTrackDatabase,
+    private val api: FitTrackApi,
 ) : ExerciseRepository {
 
     private val io = Dispatchers.Default
     private val exerciseQ get() = db.exerciseQueries
 
     init {
-        CoroutineScope(io).launch { seedIfEmpty() }
+        CoroutineScope(io).launch {
+            seedIfEmpty()
+            refreshCatalog()
+        }
     }
 
     override fun observeExercises(query: String, muscleGroup: MuscleGroup?): Flow<List<Exercise>> =
@@ -58,6 +63,28 @@ class ExerciseRepositoryImpl(
                     instructions = entity.instructions,
                     isCustom = entity.isCustom,
                     catalogVersion = entity.catalogVersion,
+                )
+            }
+        }
+    }
+
+    private suspend fun refreshCatalog() = withContext(io) {
+        val localMax = exerciseQ.selectAll().executeAsList()
+            .maxOfOrNull { it.catalogVersion } ?: 0L
+        val response = runCatching { api.getExercises(localMax.toInt()) }.getOrNull() ?: return@withContext
+        if (response.exercises.isEmpty()) return@withContext
+        db.transaction {
+            response.exercises.forEach { apiEx ->
+                exerciseQ.upsert(
+                    id = apiEx.id,
+                    name = apiEx.name,
+                    primaryMuscle = apiEx.primaryMuscle,
+                    secondaryMuscles = apiEx.secondaryMuscles.joinToString("|"),
+                    equipment = apiEx.equipment,
+                    movementType = apiEx.movementType,
+                    instructions = apiEx.instructions.joinToString("|"),
+                    isCustom = 0L,
+                    catalogVersion = apiEx.catalogVersion.toLong(),
                 )
             }
         }

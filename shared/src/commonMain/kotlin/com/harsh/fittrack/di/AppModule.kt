@@ -4,6 +4,9 @@ import com.harsh.fittrack.core.time.Clock
 import com.harsh.fittrack.core.time.SystemClock
 import com.harsh.fittrack.core.util.GreetingProvider
 import com.harsh.fittrack.data.local.DatabaseFactory
+import com.harsh.fittrack.data.remote.FitTrackApi
+import com.harsh.fittrack.data.remote.FitTrackApiImpl
+import com.harsh.fittrack.data.remote.TokenStore
 import com.harsh.fittrack.data.repository.AuthRepositoryImpl
 import com.harsh.fittrack.data.repository.ExerciseRepositoryImpl
 import com.harsh.fittrack.data.repository.UserRepositoryImpl
@@ -22,19 +25,10 @@ import com.harsh.fittrack.feature.home.HomeViewModel
 import com.harsh.fittrack.feature.home.WorkoutDetailViewModel
 import com.harsh.fittrack.feature.profile.ProfileViewModel
 import com.harsh.fittrack.feature.record.RecordViewModel
-import org.koin.core.parameter.parametersOf
-import dev.gitlive.firebase.Firebase
-import dev.gitlive.firebase.auth.FirebaseAuth
-import dev.gitlive.firebase.auth.auth
+import org.koin.core.qualifier.named
 import org.koin.core.module.Module
 import org.koin.dsl.module
 
-/**
- * Shared Koin module — bindings that work on every platform.
- *
- * Platform-specific bindings ([DatabaseFactory], [OAuthCredentialProvider]) are
- * supplied by `androidModule(...)` / `iosModule()` from the respective sourceSets.
- */
 val sharedModule: Module = module {
 
     // --- core ---
@@ -44,14 +38,22 @@ val sharedModule: Module = module {
     // --- database ---
     single<FitTrackDatabase> { get<DatabaseFactory>().create() }
 
-    // --- firebase ---
-    single<FirebaseAuth> { Firebase.auth }
+    // --- token store ---
+    single { TokenStore() }
+
+    // --- remote ---
+    single<FitTrackApi> {
+        FitTrackApiImpl(
+            tokenStore = get(),
+            baseUrl = getOrNull(named("apiBaseUrl")) ?: "http://localhost:8080",
+        )
+    }
 
     // --- data sources & repositories ---
-    single<ExerciseRepository> { ExerciseRepositoryImpl(db = get()) }
-    single<AuthRepository> { AuthRepositoryImpl(firebaseAuth = get(), credentials = get()) }
-    single<UserRepository> { UserRepositoryImpl(firebaseAuth = get(), db = get()) }
-    single<WorkoutRepository> { WorkoutRepositoryImpl(db = get()) }
+    single<AuthRepository> { AuthRepositoryImpl(db = get(), api = get(), tokenStore = get()) }
+    single<ExerciseRepository> { ExerciseRepositoryImpl(db = get(), api = get()) }
+    single<UserRepository> { UserRepositoryImpl(authRepository = get(), db = get(), api = get()) }
+    single<WorkoutRepository> { WorkoutRepositoryImpl(db = get(), api = get()) }
 
     // --- use cases ---
     factory { ValidateWorkoutUseCase() }

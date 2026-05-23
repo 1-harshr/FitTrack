@@ -8,8 +8,14 @@ fun MainViewController() = ComposeUIViewController {
     App(showAppleSignIn = true)
 }
 
-fun initKoinIos() {
+/**
+ * Called from iOSApp.swift before the first Compose frame.
+ *
+ * [apiBaseUrl] — optional override (e.g. from a build config or environment plist).
+ * Leave empty in Swift to use the default (http://localhost:8080 for the simulator).
+ */
+fun startKoinIos(apiBaseUrl: String = "http://localhost:8080") {
     initKoin {
-        modules(iosModule())
+        modules(iosModule(apiBaseUrl = apiBaseUrl))
     }
 }

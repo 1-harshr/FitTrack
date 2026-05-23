@@ -1,58 +1,77 @@
 package com.harsh.fittrack.data.repository
 
-import com.harsh.fittrack.data.remote.auth.OAuthCredentialProvider
+import com.harsh.fittrack.data.remote.FitTrackApi
+import com.harsh.fittrack.data.remote.TokenStore
+import com.harsh.fittrack.db.FitTrackDatabase
+import com.harsh.fittrack.domain.model.Units
 import com.harsh.fittrack.domain.model.User
 import com.harsh.fittrack.domain.repository.AuthRepository
-import dev.gitlive.firebase.auth.FirebaseAuth
-import dev.gitlive.firebase.auth.FirebaseUser
-import dev.gitlive.firebase.auth.GoogleAuthProvider
-import dev.gitlive.firebase.auth.OAuthProvider
-import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.withContext
 
 class AuthRepositoryImpl(
-    private val firebaseAuth: FirebaseAuth,
-    private val credentials: OAuthCredentialProvider,
+    private val db: FitTrackDatabase,
+    private val api: FitTrackApi,
+    private val tokenStore: TokenStore,
 ) : AuthRepository {
 
-    override val currentUser: Flow<User?> =
-        firebaseAuth.authStateChanged.map { it?.toUser() }
+    private val io = Dispatchers.Default
 
-    override suspend fun isSignedIn(): Boolean = firebaseAuth.currentUser != null
+    private val _currentUser = MutableStateFlow<User?>(null)
+    override val currentUser: Flow<User?> = _currentUser.asStateFlow()
 
-    override suspend fun signInWithGoogle(): Result<User> = runCatching {
-        val token = credentials.getGoogleIdToken().getOrThrow()
-        val credential = GoogleAuthProvider.credential(token.idToken, token.accessToken)
-        firebaseAuth.signInWithCredential(credential).user?.toUser()
-            ?: error("Firebase returned a null user after Google sign-in")
-    }.reThrowCancellation()
-
-    override suspend fun signInWithApple(): Result<User> = runCatching {
-        val token = credentials.getAppleIdToken().getOrThrow()
-        val credential = OAuthProvider.credential(
-            providerId = "apple.com",
-            idToken = token.idToken,
-            rawNonce = token.rawNonce,
-        )
-        firebaseAuth.signInWithCredential(credential).user?.toUser()
-            ?: error("Firebase returned a null user after Apple sign-in")
-    }.reThrowCancellation()
-
-    private fun <T> Result<T>.reThrowCancellation(): Result<T> = also {
-        it.exceptionOrNull()?.takeIf { e -> e is CancellationException }?.let { e -> throw e }
+    init {
+        val stored = db.authTokenQueries.selectOne().executeAsOneOrNull()
+        if (stored != null) {
+            tokenStore.token = stored.token
+            val userRow = db.userQueries.selectById(stored.userId).executeAsOneOrNull()
+            if (userRow != null) {
+                _currentUser.value = User(
+                    id = userRow.id,
+                    name = userRow.name,
+                    email = userRow.email,
+                    photoUrl = userRow.photoUrl,
+                    units = Units.valueOf(userRow.units),
+                )
+            }
+        }
     }
 
-    override suspend fun signOut() {
-        firebaseAuth.signOut()
+    override suspend fun isSignedIn(): Boolean = tokenStore.token != null
+
+    override suspend fun login(email: String, password: String): Result<User> = withContext(io) {
+        runCatching {
+            val response = api.login(email, password)
+                ?: error("Login failed — check your email and password.")
+            storeSession(response.token, response.user.id, response.user.name, response.user.email, response.user.units)
+        }
     }
 
-    private fun FirebaseUser.toUser(): User = User(
-        id = uid,
-        name = displayName.orEmpty(),
-        email = email.orEmpty(),
-        photoUrl = photoURL,
-        // Units default to KG here; the real value is layered in by UserRepository
-        // from the local settings store, which keys off the Firebase UID.
-    )
+    override suspend fun register(name: String, email: String, password: String): Result<User> = withContext(io) {
+        runCatching {
+            val response = api.register(name, email, password)
+                ?: error("Registration failed — the email may already be in use.")
+            storeSession(response.token, response.user.id, response.user.name, response.user.email, response.user.units)
+        }
+    }
+
+    override suspend fun signOut() = withContext(io) {
+        tokenStore.token = null
+        db.authTokenQueries.deleteAll()
+        db.userQueries.deleteAll()
+        _currentUser.value = null
+    }
+
+    private fun storeSession(token: String, id: String, name: String, email: String, units: String): User {
+        tokenStore.token = token
+        val safeUnits = runCatching { Units.valueOf(units) }.getOrElse { Units.KG }
+        db.authTokenQueries.upsert(token = token, userId = id)
+        db.userQueries.upsert(id = id, name = name, email = email, photoUrl = null, units = safeUnits.name)
+        val user = User(id = id, name = name, email = email, photoUrl = null, units = safeUnits)
+        _currentUser.value = user
+        return user
+    }
 }
