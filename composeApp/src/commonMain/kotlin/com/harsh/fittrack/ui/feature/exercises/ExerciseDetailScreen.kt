@@ -78,7 +78,7 @@ fun ExerciseDetailScreen(
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
-                bottom = if (route.source == ExerciseDetailSource.SHEET) 100.dp else 32.dp,
+                bottom = if (route.source == ExerciseDetailSource.SHEET.name) 100.dp else 32.dp,
             ),
         ) {
             // ── Hero ──────────────────────────────────────────────────────
@@ -126,7 +126,7 @@ fun ExerciseDetailScreen(
         }
 
         // ── Add to Workout CTA (SHEET context only) ───────────────────────
-        if (route.source == ExerciseDetailSource.SHEET) {
+        if (route.source == ExerciseDetailSource.SHEET.name) {
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)

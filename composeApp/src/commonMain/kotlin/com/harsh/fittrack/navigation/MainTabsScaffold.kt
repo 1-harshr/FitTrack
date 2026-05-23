@@ -108,7 +108,7 @@ fun MainTabsScaffold(onSignedOut: () -> Unit = {}) {
                     },
                     onDiscard = { navController.popBackStack() },
                     onOpenExerciseDetail = { exerciseId ->
-                        navController.navigate(Route.ExerciseDetail(exerciseId, ExerciseDetailSource.SHEET))
+                        navController.navigate(Route.ExerciseDetail(exerciseId, ExerciseDetailSource.SHEET.name))
                     },
                     addedExerciseId = addedExerciseId,
                     onExerciseConsumed = {
@@ -136,7 +136,7 @@ fun MainTabsScaffold(onSignedOut: () -> Unit = {}) {
                 ExerciseLibraryScreen(
                     onExerciseClick = { exerciseId ->
                         navController.navigate(
-                            Route.ExerciseDetail(exerciseId, ExerciseDetailSource.BROWSE)
+                            Route.ExerciseDetail(exerciseId, ExerciseDetailSource.BROWSE.name)
                         )
                     },
                 )
