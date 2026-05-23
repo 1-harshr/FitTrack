@@ -1,7 +1,8 @@
 package com.harsh.fittrack.data.repository
 
+import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import app.cash.turbine.test
-import com.harsh.fittrack.data.local.DatabaseFactory
+import com.harsh.fittrack.db.FitTrackDatabase
 import com.harsh.fittrack.domain.model.Units
 import com.harsh.fittrack.fakes.FakeApi
 import com.harsh.fittrack.fakes.FakeAuthRepository
@@ -30,12 +31,18 @@ class UserRepositoryImplTest {
     @AfterTest
     fun tearDown() = Dispatchers.resetMain()
 
+    private fun createTestDatabase(): FitTrackDatabase {
+        val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
+        FitTrackDatabase.Schema.create(driver)
+        return FitTrackDatabase(driver)
+    }
+
     private fun buildRepo(
         authRepo: FakeAuthRepository = FakeAuthRepository(null),
         api: FakeApi = FakeApi(),
-        configureDb: (com.harsh.fittrack.db.FitTrackDatabase) -> Unit = {},
-    ): Pair<UserRepositoryImpl, com.harsh.fittrack.db.FitTrackDatabase> {
-        val db = DatabaseFactory().create()
+        configureDb: (FitTrackDatabase) -> Unit = {},
+    ): Pair<UserRepositoryImpl, FitTrackDatabase> {
+        val db = createTestDatabase()
         configureDb(db)
         return Pair(UserRepositoryImpl(authRepo, db, api), db)
     }
@@ -77,11 +84,10 @@ class UserRepositoryImplTest {
     @Test
     fun `observeUser emits null when auth user exists but DB row is absent`() = runTest {
         val authRepo = FakeAuthRepository(testUser)
-        // DB row intentionally not inserted
         val (repo) = buildRepo(authRepo = authRepo)
 
         repo.observeUser().test {
-            assertNull(awaitItem()) // no matching row in DB
+            assertNull(awaitItem())
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -94,9 +100,9 @@ class UserRepositoryImplTest {
         }
 
         repo.observeUser().test {
-            assertNotNull(awaitItem()) // signed-in
+            assertNotNull(awaitItem())
 
-            authRepo.emit(null) // simulate sign out
+            authRepo.emit(null)
             assertNull(awaitItem())
             cancelAndIgnoreRemainingEvents()
         }
@@ -142,7 +148,6 @@ class UserRepositoryImplTest {
         val api = FakeApi().also { it.patchMeThrows = true }
         val (repo) = buildRepo(api = api)
 
-        // Should complete silently — network errors are swallowed
         repo.setUnits(Units.LBS)
     }
 }

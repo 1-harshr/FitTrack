@@ -1,8 +1,9 @@
 package com.harsh.fittrack.data.repository
 
+import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import app.cash.turbine.test
-import com.harsh.fittrack.data.local.DatabaseFactory
 import com.harsh.fittrack.data.remote.TokenStore
+import com.harsh.fittrack.db.FitTrackDatabase
 import com.harsh.fittrack.domain.model.Units
 import com.harsh.fittrack.fakes.FakeApi
 import com.harsh.fittrack.fakes.fakeApiAuthResponse
@@ -33,20 +34,26 @@ class AuthRepositoryImplTest {
     @AfterTest
     fun tearDown() = Dispatchers.resetMain()
 
+    private fun createTestDatabase(): FitTrackDatabase {
+        val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
+        FitTrackDatabase.Schema.create(driver)
+        return FitTrackDatabase(driver)
+    }
+
     private fun buildRepo(
         api: FakeApi = FakeApi(),
         tokenStore: TokenStore = TokenStore(),
     ): Triple<AuthRepositoryImpl, FakeApi, TokenStore> {
-        val db = DatabaseFactory().create()
+        val db = createTestDatabase()
         return Triple(AuthRepositoryImpl(db, api, tokenStore), api, tokenStore)
     }
 
     private fun buildRepoWithDb(
         api: FakeApi = FakeApi(),
         tokenStore: TokenStore = TokenStore(),
-        configureDb: (com.harsh.fittrack.db.FitTrackDatabase) -> Unit = {},
+        configureDb: (FitTrackDatabase) -> Unit = {},
     ): Triple<AuthRepositoryImpl, FakeApi, TokenStore> {
-        val db = DatabaseFactory().create()
+        val db = createTestDatabase()
         configureDb(db)
         return Triple(AuthRepositoryImpl(db, api, tokenStore), api, tokenStore)
     }
@@ -69,14 +76,12 @@ class AuthRepositoryImplTest {
         val tokenStore = TokenStore()
         val (repo) = buildRepoWithDb(tokenStore = tokenStore) { db ->
             db.authTokenQueries.upsert(token = "old-token", userId = "ghost-user")
-            // Intentionally NOT inserting a user row
         }
 
         repo.currentUser.test {
             assertNull(awaitItem())
             cancelAndIgnoreRemainingEvents()
         }
-        // Token is still restored into the store even without the user row
         assertEquals("old-token", tokenStore.token)
     }
 
@@ -160,7 +165,6 @@ class AuthRepositoryImplTest {
 
         repo.currentUser.test {
             awaitItem() // null initial
-
             repo.login("eve@x.com", "pass")
             val user = awaitItem()
             assertNotNull(user)
@@ -233,7 +237,6 @@ class AuthRepositoryImplTest {
 
         repo.currentUser.test {
             awaitItem() // signed-in user
-
             repo.signOut()
             assertNull(awaitItem())
             cancelAndIgnoreRemainingEvents()
@@ -244,9 +247,7 @@ class AuthRepositoryImplTest {
     @Test
     fun `signOut when already signed out is a no-op`() = runTest {
         val (repo) = buildRepo()
-
-        repo.signOut() // should not throw
-
+        repo.signOut()
         assertFalse(repo.isSignedIn())
     }
 }
