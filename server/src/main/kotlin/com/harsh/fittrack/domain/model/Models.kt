@@ -83,6 +83,41 @@ data class WorkoutListResponse(
 )
 
 @Serializable
+data class PersonalRecord(
+    val exerciseId: String,
+    val maxWeightKg: Double,
+    val maxReps: Int,
+    val achievedAt: Long,
+)
+
+@Serializable
+data class WorkoutSaveResponse(
+    val workout: Workout,
+    val newPrs: List<PersonalRecord> = emptyList(),
+)
+
+@Serializable
+data class TemplateExercise(
+    val exerciseId: String,
+    val exerciseName: String,
+    val orderIndex: Int,
+)
+
+@Serializable
+data class WorkoutTemplate(
+    val id: String,
+    val name: String,
+    val exercises: List<TemplateExercise>,
+    val createdAt: Long,
+)
+
+@Serializable
+data class CreateTemplateRequest(
+    val name: String,
+    val exercises: List<TemplateExercise>,
+)
+
+@Serializable
 data class SyncStatusResponse(
     val workoutCursor: String?,
     val catalogVersion: Int,

@@ -1,8 +1,12 @@
 package com.harsh.fittrack.plugins
 
+import com.harsh.fittrack.feature.ai.aiRoutes
 import com.harsh.fittrack.feature.auth.authRoutes
 import com.harsh.fittrack.feature.exercise.exerciseRoutes
+import com.harsh.fittrack.feature.pr.prRoutes
+import com.harsh.fittrack.feature.stats.statsRoutes
 import com.harsh.fittrack.feature.sync.syncRoutes
+import com.harsh.fittrack.feature.template.templateRoutes
 import com.harsh.fittrack.feature.user.userRoutes
 import com.harsh.fittrack.feature.workout.workoutRoutes
 import io.ktor.server.application.Application
@@ -28,5 +32,9 @@ fun Application.configureRouting() {
         exerciseRoutes()
         workoutRoutes()
         syncRoutes()
+        prRoutes()
+        templateRoutes()
+        statsRoutes()
+        aiRoutes()
     }
 }

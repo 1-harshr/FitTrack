@@ -18,6 +18,7 @@ import com.harsh.fittrack.ui.feature.exercises.ExerciseLibraryScreen
 import com.harsh.fittrack.ui.feature.home.HomeScreen
 import com.harsh.fittrack.ui.feature.home.WorkoutDetailScreen
 import com.harsh.fittrack.ui.feature.profile.ProfileScreen
+import com.harsh.fittrack.ui.feature.progress.ProgressScreen
 import com.harsh.fittrack.ui.feature.record.RecordWorkoutScreen
 import com.harsh.fittrack.ui.feature.record.WorkoutCompleteScreen
 import org.koin.compose.koinInject
@@ -39,6 +40,7 @@ fun MainTabsScaffold(onSignedOut: () -> Unit = {}) {
         backStackEntry?.destination?.hasRoute<Route.ExerciseLibrary>() == true ||
         backStackEntry?.destination?.hasRoute<Route.ExerciseDetail>() == true -> NavTab.Exercises
         backStackEntry?.destination?.hasRoute<Route.Profile>() == true -> NavTab.Profile
+        backStackEntry?.destination?.hasRoute<Route.Progress>() == true -> NavTab.Progress
         else -> NavTab.Home
     }
 
@@ -162,6 +164,15 @@ fun MainTabsScaffold(onSignedOut: () -> Unit = {}) {
                 popExitTransition = { tabExit() },
             ) {
                 ProfileScreen(onSignedOut = onSignedOut)
+            }
+
+            composable<Route.Progress>(
+                enterTransition = { tabEnter() },
+                exitTransition = { tabExit() },
+                popEnterTransition = { tabEnter() },
+                popExitTransition = { tabExit() },
+            ) {
+                ProgressScreen()
             }
         }
     }

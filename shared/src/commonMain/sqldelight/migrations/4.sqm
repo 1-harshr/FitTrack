@@ -1,0 +1,13 @@
+CREATE TABLE IF NOT EXISTS WorkoutTemplateEntity (
+    id        TEXT    NOT NULL PRIMARY KEY,
+    name      TEXT    NOT NULL,
+    createdAt INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS TemplateExerciseEntity (
+    id           TEXT    NOT NULL PRIMARY KEY,
+    templateId   TEXT    NOT NULL REFERENCES WorkoutTemplateEntity(id) ON DELETE CASCADE,
+    exerciseId   TEXT    NOT NULL,
+    exerciseName TEXT    NOT NULL,
+    orderIndex   INTEGER NOT NULL
+);

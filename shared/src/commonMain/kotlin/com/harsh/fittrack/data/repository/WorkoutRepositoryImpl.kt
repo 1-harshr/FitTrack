@@ -11,9 +11,11 @@ import com.harsh.fittrack.data.remote.ApiSetEntry
 import com.harsh.fittrack.data.remote.ApiWorkout
 import com.harsh.fittrack.data.remote.FitTrackApi
 import com.harsh.fittrack.db.FitTrackDatabase
+import com.harsh.fittrack.domain.model.PersonalRecord
 import com.harsh.fittrack.domain.model.SetEntry
 import com.harsh.fittrack.domain.model.Workout
 import com.harsh.fittrack.domain.repository.ExerciseWithSets
+import com.harsh.fittrack.domain.repository.PersonalRecordRepository
 import com.harsh.fittrack.domain.repository.WorkoutRepository
 import com.harsh.fittrack.domain.repository.WorkoutWithDetails
 import kotlinx.coroutines.CoroutineScope
@@ -32,6 +34,7 @@ import kotlin.random.Random
 class WorkoutRepositoryImpl(
     private val db: FitTrackDatabase,
     private val api: FitTrackApi,
+    private val personalRecordRepository: PersonalRecordRepository? = null,
 ) : WorkoutRepository {
 
     private val workoutQ get() = db.workoutQueries
@@ -210,7 +213,19 @@ class WorkoutRepositoryImpl(
                     )
                 },
             )
-            api.postWorkout(apiWorkout)
+            val response = api.postWorkout(apiWorkout) ?: return
+            if (response.newPrs.isNotEmpty()) {
+                personalRecordRepository?.saveAll(
+                    response.newPrs.map { apiPr ->
+                        PersonalRecord(
+                            exerciseId = apiPr.exerciseId,
+                            maxWeightKg = apiPr.maxWeightKg,
+                            maxReps = apiPr.maxReps,
+                            achievedAt = apiPr.achievedAt,
+                        )
+                    }
+                )
+            }
         }
     }
 

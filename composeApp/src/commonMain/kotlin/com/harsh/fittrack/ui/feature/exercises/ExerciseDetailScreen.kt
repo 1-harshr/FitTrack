@@ -35,7 +35,9 @@ import com.harsh.fittrack.domain.model.Equipment
 import com.harsh.fittrack.domain.model.Exercise
 import com.harsh.fittrack.domain.model.MovementType
 import com.harsh.fittrack.domain.model.MuscleGroup
+import com.harsh.fittrack.domain.model.PersonalRecord
 import com.harsh.fittrack.domain.repository.ExerciseRepository
+import com.harsh.fittrack.domain.repository.PersonalRecordRepository
 import com.harsh.fittrack.navigation.ExerciseDetailSource
 import com.harsh.fittrack.navigation.Route
 import com.harsh.fittrack.resources.Res
@@ -59,8 +61,12 @@ fun ExerciseDetailScreen(
 ) {
     val route = backStackEntry.toRoute<Route.ExerciseDetail>()
     val exerciseRepository: ExerciseRepository = koinInject()
+    val prRepository: PersonalRecordRepository = koinInject()
     val exercise by produceState<Exercise?>(null, route.exerciseId) {
         value = exerciseRepository.byId(route.exerciseId)
+    }
+    val personalRecord by produceState<PersonalRecord?>(null, route.exerciseId) {
+        value = prRepository.getForExercise(route.exerciseId)
     }
 
     val ex = exercise ?: run {
@@ -87,6 +93,20 @@ fun ExerciseDetailScreen(
                     exercise = ex,
                     onBack = onBack,
                 )
+            }
+
+            // ── Personal Record ───────────────────────────────────────────
+            personalRecord?.let { pr ->
+                item {
+                    PersonalRecordSection(
+                        pr = pr,
+                        modifier = Modifier.padding(
+                            start = FitTrackTheme.spacing.containerMargin,
+                            end = FitTrackTheme.spacing.containerMargin,
+                            top = FitTrackTheme.spacing.md,
+                        ),
+                    )
+                }
             }
 
             // ── Meta chips ────────────────────────────────────────────────
@@ -342,6 +362,50 @@ private fun InstructionStep(
             color = FitTrackTheme.colors.onSurface,
             modifier = Modifier.weight(1f),
         )
+    }
+}
+
+// ── Personal Record section ───────────────────────────────────────────────────
+
+@Composable
+private fun PersonalRecordSection(
+    pr: PersonalRecord,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(FitTrackTheme.colors.primary.copy(alpha = 0.12f), RoundedCornerShape(8.dp))
+            .padding(horizontal = FitTrackTheme.spacing.md, vertical = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column {
+            Text(
+                text = "Personal Record",
+                style = FitTrackTheme.typography.labelSmall,
+                color = FitTrackTheme.colors.primary,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = "${pr.maxWeightKg.let { if (it == it.toLong().toDouble()) it.toLong().toString() else it.toString() }} kg × ${pr.maxReps} reps",
+                style = FitTrackTheme.typography.bodyMedium,
+                color = FitTrackTheme.colors.onSurface,
+                fontWeight = FontWeight.Bold,
+            )
+        }
+        Box(
+            modifier = Modifier
+                .background(FitTrackTheme.colors.primary, RoundedCornerShape(4.dp))
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+        ) {
+            Text(
+                text = "PR",
+                style = FitTrackTheme.typography.labelSmall,
+                color = FitTrackTheme.colors.onPrimary,
+                fontWeight = FontWeight.ExtraBold,
+            )
+        }
     }
 }
 

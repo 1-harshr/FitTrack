@@ -39,6 +39,11 @@ dependencies {
     // DI
     implementation(libs.koin.ktor)
 
+    // Ktor client (for outbound Claude API calls)
+    implementation(libs.ktor.clientCio)
+    implementation(libs.ktor.clientContentNegotiation)
+    implementation(libs.ktor.clientKotlinxJson)
+
     // Serialization + logging
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.datetime)

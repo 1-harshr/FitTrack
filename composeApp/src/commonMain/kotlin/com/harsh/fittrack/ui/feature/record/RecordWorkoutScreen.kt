@@ -43,6 +43,7 @@ import com.harsh.fittrack.domain.model.SetEntry
 import com.harsh.fittrack.domain.repository.ExerciseWithSets
 import com.harsh.fittrack.domain.usecase.record.WorkoutValidationError
 import com.harsh.fittrack.feature.record.RecordViewModel
+import com.harsh.fittrack.feature.record.TemplateViewModel
 import com.harsh.fittrack.resources.Res
 import com.harsh.fittrack.resources.record_add_exercise
 import com.harsh.fittrack.resources.record_validation_empty_set
@@ -83,7 +84,9 @@ fun RecordWorkoutScreen(
     onExerciseConsumed: () -> Unit = {},
 ) {
     val vm: RecordViewModel = koinViewModel()
+    val templateVm: TemplateViewModel = koinViewModel()
     val state by vm.state.collectAsStateWithLifecycle()
+    val templates by templateVm.templates.collectAsStateWithLifecycle()
 
     LaunchedEffect(userId) { vm.startOrResumeWorkout(userId) }
 
@@ -99,6 +102,8 @@ fun RecordWorkoutScreen(
     var showDiscardDialog by remember { mutableStateOf(false) }
     var showFinishDialog by remember { mutableStateOf(false) }
     var showAddExercise by remember { mutableStateOf(false) }
+    var showTemplateSheet by remember { mutableStateOf(false) }
+    var showSaveTemplateDialog by remember { mutableStateOf(false) }
 
     // Timer only ticks once the workout has started
     LaunchedEffect(state.hasStarted) {
@@ -117,7 +122,20 @@ fun RecordWorkoutScreen(
             onTitleChange = { vm.renameTitle(it) },
             onStart = { vm.startWorkout() },
             onDiscard = onDiscard,
+            onUseTemplate = { showTemplateSheet = true },
         )
+        if (showTemplateSheet) {
+            TemplateListSheet(
+                templates = templates,
+                onSelect = { template ->
+                    showTemplateSheet = false
+                    vm.startWorkout()
+                    template.exercises.forEach { vm.addExercise(it.exerciseId) }
+                },
+                onDelete = { id -> templateVm.deleteTemplate(id) },
+                onDismiss = { showTemplateSheet = false },
+            )
+        }
         return@RecordWorkoutScreen
     }
 
@@ -159,6 +177,7 @@ fun RecordWorkoutScreen(
                     RecordExerciseSection(
                         exerciseWithSets = exerciseWithSets,
                         exerciseName = exerciseWithSets.entry.exerciseName,
+                        hasPr = exerciseWithSets.entry.exerciseId in state.newPrExerciseIds,
                         onAddSet = { vm.addSet(exerciseWithSets.entry.id) },
                         onUpdateSet = { vm.updateSet(it) },
                         modifier = Modifier
@@ -192,13 +211,14 @@ fun RecordWorkoutScreen(
         }
 
         // ── Finish button (sticky bottom) ─────────────────────────────
-        Box(
+        Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
                 .background(FitTrackTheme.colors.surface)
-                .padding(FitTrackTheme.spacing.containerMargin)
-                .padding(bottom = FitTrackTheme.spacing.md),
+                .padding(horizontal = FitTrackTheme.spacing.containerMargin)
+                .padding(top = FitTrackTheme.spacing.sm, bottom = FitTrackTheme.spacing.md),
+            verticalArrangement = Arrangement.spacedBy(FitTrackTheme.spacing.sm),
         ) {
             Box(
                 modifier = Modifier
@@ -215,6 +235,22 @@ fun RecordWorkoutScreen(
                     color = FitTrackTheme.colors.onPrimary,
                     fontWeight = FontWeight.Bold,
                 )
+            }
+            if (state.exercises.isNotEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable { showSaveTemplateDialog = true }
+                        .padding(vertical = 6.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = "Save as Template",
+                        style = FitTrackTheme.typography.labelMedium,
+                        color = FitTrackTheme.colors.onSurfaceVariant,
+                    )
+                }
             }
         }
     }
@@ -322,6 +358,24 @@ fun RecordWorkoutScreen(
             onDismiss = { vm.clearValidationErrors() },
         )
     }
+
+    // ── Save as template dialog ───────────────────────────────────────
+    if (showSaveTemplateDialog) {
+        SaveTemplateDialog(
+            onConfirm = { name ->
+                val exercises = state.exercises.map { ews ->
+                    com.harsh.fittrack.domain.model.TemplateExercise(
+                        exerciseId = ews.entry.exerciseId,
+                        exerciseName = ews.entry.exerciseName,
+                        orderIndex = ews.entry.orderIndex,
+                    )
+                }
+                templateVm.createTemplate(name, exercises)
+                showSaveTemplateDialog = false
+            },
+            onDismiss = { showSaveTemplateDialog = false },
+        )
+    }
 }
 
 // ── Validation error dialog ───────────────────────────────────────────────────
@@ -399,6 +453,7 @@ private fun PreWorkoutScreen(
     onTitleChange: (String) -> Unit,
     onStart: () -> Unit,
     onDiscard: () -> Unit,
+    onUseTemplate: () -> Unit = {},
 ) {
     Box(
         modifier = Modifier
@@ -477,6 +532,26 @@ private fun PreWorkoutScreen(
                     style = FitTrackTheme.typography.labelLarge,
                     color = FitTrackTheme.colors.onPrimary,
                     fontWeight = FontWeight.Bold,
+                )
+            }
+
+            Spacer(Modifier.height(FitTrackTheme.spacing.sm))
+
+            // Use Template button
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(FitTrackTheme.colors.primary.copy(alpha = 0.12f))
+                    .clickable(onClick = onUseTemplate),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = "Use Template",
+                    style = FitTrackTheme.typography.labelLarge,
+                    color = FitTrackTheme.colors.primary,
+                    fontWeight = FontWeight.SemiBold,
                 )
             }
 
@@ -578,6 +653,7 @@ private fun RecordTopBar(
 private fun RecordExerciseSection(
     exerciseWithSets: ExerciseWithSets,
     exerciseName: String,
+    hasPr: Boolean = false,
     onAddSet: () -> Unit,
     onUpdateSet: (SetEntry) -> Unit,
     modifier: Modifier = Modifier,
@@ -614,6 +690,9 @@ private fun RecordExerciseSection(
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.weight(1f),
             )
+            if (hasPr) {
+                PrBadge()
+            }
         }
 
         HorizontalDivider(color = FitTrackTheme.colors.outline.copy(alpha = 0.3f))
