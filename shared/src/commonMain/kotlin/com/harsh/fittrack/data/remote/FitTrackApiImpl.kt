@@ -95,7 +95,7 @@ class FitTrackApiImpl(
         if (r.status.isSuccess()) r.body() else null
     }.getOrNull()
 
-    override suspend fun postWorkout(workout: ApiWorkout): ApiWorkout? = runCatching {
+    override suspend fun postWorkout(workout: ApiWorkout): ApiWorkoutSaveResponse? = runCatching {
         val t = token() ?: return null
         val r = client.post("$baseUrl/workouts") {
             header(HttpHeaders.Authorization, "Bearer $t")
@@ -127,6 +127,73 @@ class FitTrackApiImpl(
     override suspend fun getSyncStatus(): ApiSyncStatusResponse? = runCatching {
         val t = token() ?: return null
         val r = client.get("$baseUrl/sync/status") {
+            header(HttpHeaders.Authorization, "Bearer $t")
+        }
+        if (r.status.isSuccess()) r.body() else null
+    }.getOrNull()
+
+    override suspend fun getExercisePr(exerciseId: String): ApiPersonalRecord? = runCatching {
+        val t = token() ?: return null
+        val r = client.get("$baseUrl/exercises/$exerciseId/pr") {
+            header(HttpHeaders.Authorization, "Bearer $t")
+        }
+        if (r.status.isSuccess()) r.body() else null
+    }.getOrNull()
+
+    override suspend fun getTemplates(): List<ApiWorkoutTemplate> = runCatching {
+        val t = token() ?: return@runCatching emptyList<ApiWorkoutTemplate>()
+        val r = client.get("$baseUrl/templates") {
+            header(HttpHeaders.Authorization, "Bearer $t")
+        }
+        if (r.status.isSuccess()) r.body<List<ApiWorkoutTemplate>>() else emptyList()
+    }.getOrDefault(emptyList())
+
+    override suspend fun postTemplate(request: ApiCreateTemplateRequest): ApiWorkoutTemplate? = runCatching {
+        val t = token() ?: return null
+        val r = client.post("$baseUrl/templates") {
+            header(HttpHeaders.Authorization, "Bearer $t")
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }
+        if (r.status.isSuccess()) r.body() else null
+    }.getOrNull()
+
+    override suspend fun deleteTemplate(id: String) {
+        val t = token() ?: return
+        runCatching {
+            client.delete("$baseUrl/templates/$id") {
+                header(HttpHeaders.Authorization, "Bearer $t")
+            }
+        }
+    }
+
+    override suspend fun getWeeklyVolume(periodWeeks: Int): ApiWeeklyVolumeResponse? = runCatching {
+        val t = token() ?: return null
+        val r = client.get("$baseUrl/stats/volume?period=${periodWeeks}w") {
+            header(HttpHeaders.Authorization, "Bearer $t")
+        }
+        if (r.status.isSuccess()) r.body() else null
+    }.getOrNull()
+
+    override suspend fun getExerciseProgression(exerciseId: String): ApiExerciseProgressionResponse? = runCatching {
+        val t = token() ?: return null
+        val r = client.get("$baseUrl/stats/exercise/$exerciseId/progression") {
+            header(HttpHeaders.Authorization, "Bearer $t")
+        }
+        if (r.status.isSuccess()) r.body() else null
+    }.getOrNull()
+
+    override suspend fun getMuscleFrequency(periodDays: Int): ApiMuscleFrequencyResponse? = runCatching {
+        val t = token() ?: return null
+        val r = client.get("$baseUrl/stats/muscle-frequency?period=${periodDays}d") {
+            header(HttpHeaders.Authorization, "Bearer $t")
+        }
+        if (r.status.isSuccess()) r.body() else null
+    }.getOrNull()
+
+    override suspend fun getCoachingInsight(): ApiCoachingInsight? = runCatching {
+        val t = token() ?: return null
+        val r = client.get("$baseUrl/ai/coaching-insight") {
             header(HttpHeaders.Authorization, "Bearer $t")
         }
         if (r.status.isSuccess()) r.body() else null

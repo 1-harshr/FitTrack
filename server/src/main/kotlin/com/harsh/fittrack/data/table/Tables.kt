@@ -63,3 +63,29 @@ object SetEntriesTable : Table("set_entries") {
     val createdAt       = timestampWithTimeZone("created_at")
     override val primaryKey = PrimaryKey(id)
 }
+
+object PersonalRecordsTable : Table("personal_records") {
+    val userId      = text("user_id").references(UsersTable.id)
+    val exerciseId  = text("exercise_id")
+    val maxWeightKg = decimal("max_weight_kg", precision = 6, scale = 2)
+    val maxReps     = integer("max_reps")
+    val achievedAt  = long("achieved_at")
+    override val primaryKey = PrimaryKey(userId, exerciseId)
+}
+
+object WorkoutTemplatesTable : Table("workout_templates") {
+    val id        = text("id")
+    val userId    = text("user_id").references(UsersTable.id)
+    val name      = text("name")
+    val createdAt = timestampWithTimeZone("created_at")
+    override val primaryKey = PrimaryKey(id)
+}
+
+object TemplateExercisesTable : Table("template_exercises") {
+    val id           = text("id")
+    val templateId   = text("template_id").references(WorkoutTemplatesTable.id)
+    val exerciseId   = text("exercise_id")
+    val exerciseName = text("exercise_name")
+    val orderIndex   = integer("order_index")
+    override val primaryKey = PrimaryKey(id)
+}

@@ -98,6 +98,18 @@ fun HomeScreen(
                 )
             }
 
+            // ── AI Coach card ─────────────────────────────────────────────
+            item {
+                CoachCard(
+                    insight = state.coachInsight,
+                    isLoading = state.coachIsLoading,
+                    onRefresh = { vm.refreshCoachingInsight() },
+                    modifier = Modifier
+                        .padding(horizontal = FitTrackTheme.spacing.containerMargin)
+                        .padding(bottom = FitTrackTheme.spacing.lg),
+                )
+            }
+
             // ── Start workout CTA ─────────────────────────────────────────
             item {
                 Box(

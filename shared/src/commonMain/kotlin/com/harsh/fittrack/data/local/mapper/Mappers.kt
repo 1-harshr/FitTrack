@@ -2,6 +2,7 @@ package com.harsh.fittrack.data.local.mapper
 
 import com.harsh.fittrack.db.ExerciseEntity
 import com.harsh.fittrack.db.ExerciseEntryEntity
+import com.harsh.fittrack.db.PersonalRecordEntity
 import com.harsh.fittrack.db.SetEntryEntity
 import com.harsh.fittrack.db.UserEntity
 import com.harsh.fittrack.db.WorkoutEntity
@@ -10,6 +11,7 @@ import com.harsh.fittrack.domain.model.Exercise
 import com.harsh.fittrack.domain.model.ExerciseEntry
 import com.harsh.fittrack.domain.model.MovementType
 import com.harsh.fittrack.domain.model.MuscleGroup
+import com.harsh.fittrack.domain.model.PersonalRecord
 import com.harsh.fittrack.domain.model.SetEntry
 import com.harsh.fittrack.domain.model.Units
 import com.harsh.fittrack.domain.model.User
@@ -67,6 +69,13 @@ fun SetEntryEntity.toDomain() = SetEntry(
     reps = reps.toInt(),
     weight = weight,
     isCompleted = isCompleted != 0L,
+)
+
+fun PersonalRecordEntity.toDomain() = PersonalRecord(
+    exerciseId = exerciseId,
+    maxWeightKg = maxWeightKg,
+    maxReps = maxReps.toInt(),
+    achievedAt = achievedAt,
 )
 
 fun UserEntity.toDomain() = User(

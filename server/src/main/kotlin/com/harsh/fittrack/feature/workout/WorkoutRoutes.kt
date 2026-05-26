@@ -3,7 +3,9 @@ package com.harsh.fittrack.feature.workout
 import com.harsh.fittrack.domain.model.PatchWorkoutRequest
 import com.harsh.fittrack.domain.model.Workout
 import com.harsh.fittrack.domain.model.WorkoutListResponse
+import com.harsh.fittrack.domain.model.WorkoutSaveResponse
 import com.harsh.fittrack.domain.repository.WorkoutRepository
+import com.harsh.fittrack.feature.pr.PrService
 import com.harsh.fittrack.plugins.NotFoundException
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.auth.authenticate
@@ -22,6 +24,7 @@ import java.util.Base64
 
 fun Route.workoutRoutes() {
     val workoutRepo: WorkoutRepository by inject()
+    val prService: PrService by inject()
 
     authenticate("jwt") {
         route("/workouts") {
@@ -42,10 +45,13 @@ fun Route.workoutRoutes() {
                 val existing = workoutRepo.findById(toSave.id, userId)
 
                 if (existing != null) {
-                    call.respond(HttpStatusCode.OK, existing)
+                    call.respond(HttpStatusCode.OK, WorkoutSaveResponse(workout = existing))
                 } else {
                     val saved = workoutRepo.save(toSave)
-                    call.respond(HttpStatusCode.Created, saved)
+                    val newPrs = if (saved.durationSeconds > 0) {
+                        prService.detectAndUpdatePrs(userId, saved)
+                    } else emptyList()
+                    call.respond(HttpStatusCode.Created, WorkoutSaveResponse(workout = saved, newPrs = newPrs))
                 }
             }
 

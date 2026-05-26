@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.harsh.fittrack.core.time.Clock
 import com.harsh.fittrack.core.util.GreetingProvider
+import com.harsh.fittrack.data.remote.FitTrackApi
 import com.harsh.fittrack.domain.repository.UserRepository
 import com.harsh.fittrack.domain.repository.WorkoutRepository
 import com.harsh.fittrack.domain.usecase.stats.CalculateStreakUseCase
@@ -25,6 +26,7 @@ class HomeViewModel(
     private val clock: Clock,
     private val calculateStreak: CalculateStreakUseCase,
     private val calculateWeeklyWorkouts: CalculateWeeklyWorkoutsUseCase,
+    private val api: FitTrackApi,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(HomeState())
@@ -49,6 +51,29 @@ class HomeViewModel(
                     isLoading = false,
                 )
             }.collect { _state.value = it }
+        }
+
+        refreshCoachingInsight()
+    }
+
+    fun refreshCoachingInsight() {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(coachIsLoading = true)
+            val resp = runCatching { api.getCoachingInsight() }.getOrNull()
+            _state.value = _state.value.copy(
+                coachIsLoading = false,
+                coachInsight = resp?.let { r ->
+                    CoachingInsight(
+                        targetMuscleGroups = r.targetMuscleGroups,
+                        progressionSuggestions = r.progressionSuggestions.map {
+                            ProgressionSuggestion(it.exerciseName, it.currentBestKg, it.currentBestReps, it.suggestion)
+                        },
+                        weaknesses = r.weaknesses,
+                        dailyTip = r.dailyTip,
+                        generatedAt = r.generatedAt,
+                    )
+                },
+            )
         }
     }
 

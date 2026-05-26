@@ -5,4 +5,5 @@ enum class NavTab(val startRoute: Route) {
     Record(Route.RecordWorkout),
     Exercises(Route.ExerciseLibrary),
     Profile(Route.Profile),
+    Progress(Route.Progress),
 }

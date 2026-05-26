@@ -12,4 +12,6 @@ data class HomeState(
     val recentWorkouts: List<Workout> = emptyList(),
     val today: LocalDate? = null,
     val isLoading: Boolean = true,
+    val coachInsight: CoachingInsight? = null,
+    val coachIsLoading: Boolean = false,
 )

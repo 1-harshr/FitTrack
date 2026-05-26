@@ -3,8 +3,11 @@ package com.harsh.fittrack.plugins
 import com.harsh.fittrack.data.seed.ExerciseSeeder
 import com.harsh.fittrack.data.table.ExerciseEntriesTable
 import com.harsh.fittrack.data.table.ExercisesTable
+import com.harsh.fittrack.data.table.PersonalRecordsTable
 import com.harsh.fittrack.data.table.SetEntriesTable
+import com.harsh.fittrack.data.table.TemplateExercisesTable
 import com.harsh.fittrack.data.table.UsersTable
+import com.harsh.fittrack.data.table.WorkoutTemplatesTable
 import com.harsh.fittrack.data.table.WorkoutsTable
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
@@ -38,6 +41,9 @@ fun Application.configureDatabase() {
             WorkoutsTable,
             ExerciseEntriesTable,
             SetEntriesTable,
+            PersonalRecordsTable,
+            WorkoutTemplatesTable,
+            TemplateExercisesTable,
         )
     }
 

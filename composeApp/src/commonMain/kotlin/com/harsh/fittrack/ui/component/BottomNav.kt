@@ -19,6 +19,7 @@ import com.harsh.fittrack.resources.Res
 import com.harsh.fittrack.resources.nav_exercises
 import com.harsh.fittrack.resources.nav_home
 import com.harsh.fittrack.resources.nav_profile
+import com.harsh.fittrack.resources.nav_progress
 import com.harsh.fittrack.resources.nav_record
 import com.harsh.fittrack.ui.theme.FitTrackTheme
 import com.harsh.fittrack.ui.theme.SurfaceContainerHigh
@@ -38,6 +39,7 @@ fun FitBottomNav(
             NavTab.Record to stringResource(Res.string.nav_record),
             NavTab.Exercises to stringResource(Res.string.nav_exercises),
             NavTab.Profile to stringResource(Res.string.nav_profile),
+            NavTab.Progress to stringResource(Res.string.nav_progress),
         )
 
         tabs.forEach { (tab, label) ->
@@ -92,6 +94,11 @@ private fun NavIconPlaceholder(tab: NavTab, tint: Color) {
         }
         NavTab.Profile -> Box(Modifier.size(size), contentAlignment = Alignment.Center) {
             Box(Modifier.size(12.dp).background(tint, CircleShape))
+        }
+        NavTab.Progress -> Box(Modifier.size(size), contentAlignment = Alignment.Center) {
+            Box(Modifier.size(18.dp, 14.dp).background(tint.copy(alpha = 0.25f), RoundedCornerShape(2.dp)), contentAlignment = Alignment.BottomStart) {
+                Box(Modifier.size(6.dp, 10.dp).background(tint, RoundedCornerShape(topStart = 2.dp, topEnd = 2.dp)))
+            }
         }
     }
 }

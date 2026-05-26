@@ -38,6 +38,10 @@ sealed interface Route {
 
     // Profile tab
     @Serializable data object Profile : Route
+
+    // Progress tab
+    @Serializable data object ProgressGraph : Route
+    @Serializable data object Progress : Route
 }
 
 @Serializable

@@ -1,0 +1,16 @@
+CREATE TABLE PersonalRecordEntity (
+    exerciseId  TEXT    NOT NULL PRIMARY KEY,
+    maxWeightKg REAL    NOT NULL,
+    maxReps     INTEGER NOT NULL,
+    achievedAt  INTEGER NOT NULL
+);
+
+upsert:
+INSERT OR REPLACE INTO PersonalRecordEntity(exerciseId, maxWeightKg, maxReps, achievedAt)
+VALUES (?, ?, ?, ?);
+
+selectByExercise:
+SELECT * FROM PersonalRecordEntity WHERE exerciseId = ?;
+
+selectAll:
+SELECT * FROM PersonalRecordEntity;

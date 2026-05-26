@@ -3,10 +3,12 @@ package com.harsh.fittrack.feature.record
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.harsh.fittrack.domain.model.ExerciseEntry
+import com.harsh.fittrack.domain.model.PersonalRecord
 import com.harsh.fittrack.domain.model.SetEntry
 import com.harsh.fittrack.core.time.Clock
 import com.harsh.fittrack.domain.repository.ExerciseRepository
 import com.harsh.fittrack.domain.repository.ExerciseWithSets
+import com.harsh.fittrack.domain.repository.PersonalRecordRepository
 import com.harsh.fittrack.domain.repository.WorkoutRepository
 import com.harsh.fittrack.domain.usecase.record.ValidateWorkoutUseCase
 import com.harsh.fittrack.domain.usecase.record.WorkoutValidationResult
@@ -21,6 +23,7 @@ class RecordViewModel(
     private val exerciseRepository: ExerciseRepository,
     private val validateWorkout: ValidateWorkoutUseCase,
     private val clock: Clock,
+    private val personalRecordRepository: PersonalRecordRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(RecordState())
@@ -77,6 +80,7 @@ class RecordViewModel(
     fun addExercise(exerciseId: String) {
         viewModelScope.launch {
             val name = exerciseRepository.byId(exerciseId)?.name ?: exerciseId
+            val pr = personalRecordRepository.getForExercise(exerciseId)
             val workoutId = _state.value.workoutId
             if (workoutId != null) {
                 val entryId = workoutRepository.addExercise(workoutId, exerciseId, name)
@@ -98,6 +102,7 @@ class RecordViewModel(
                 )
                 _state.value = _state.value.copy(
                     exercises = _state.value.exercises + ExerciseWithSets(entry = entry, sets = listOf(firstSet)),
+                    prs = if (pr != null) _state.value.prs + (exerciseId to pr) else _state.value.prs,
                 )
             } else {
                 val entry = ExerciseEntry(
@@ -117,6 +122,7 @@ class RecordViewModel(
                 )
                 _state.value = _state.value.copy(
                     exercises = _state.value.exercises + ExerciseWithSets(entry = entry, sets = listOf(firstSet)),
+                    prs = if (pr != null) _state.value.prs + (exerciseId to pr) else _state.value.prs,
                 )
             }
         }
@@ -167,11 +173,31 @@ class RecordViewModel(
     }
 
     fun updateSet(set: SetEntry) {
+        val exercises = _state.value.exercises.map { ews ->
+            if (ews.entry.id != set.exerciseEntryId) ews
+            else ews.copy(sets = ews.sets.map { if (it.id == set.id) set else it })
+        }
+        val exerciseId = exercises.find { it.entry.id == set.exerciseEntryId }?.entry?.exerciseId
+        var newPrIds = _state.value.newPrExerciseIds
+        var updatedPrs = _state.value.prs
+        if (set.isCompleted && exerciseId != null) {
+            val currentPr = updatedPrs[exerciseId]
+            if (detectNewPr(currentPr, set.weight, set.reps)) {
+                newPrIds = newPrIds + exerciseId
+                val newPr = PersonalRecord(
+                    exerciseId = exerciseId,
+                    maxWeightKg = set.weight,
+                    maxReps = set.reps,
+                    achievedAt = 0L,
+                )
+                updatedPrs = updatedPrs + (exerciseId to newPr)
+                viewModelScope.launch { personalRecordRepository.upsert(newPr) }
+            }
+        }
         _state.value = _state.value.copy(
-            exercises = _state.value.exercises.map { ews ->
-                if (ews.entry.id != set.exerciseEntryId) ews
-                else ews.copy(sets = ews.sets.map { if (it.id == set.id) set else it })
-            },
+            exercises = exercises,
+            newPrExerciseIds = newPrIds,
+            prs = updatedPrs,
         )
         viewModelScope.launch { workoutRepository.updateSet(set) }
     }
@@ -199,6 +225,18 @@ class RecordViewModel(
 
     fun clearValidationErrors() {
         _state.value = _state.value.copy(validationErrors = emptyList())
+    }
+
+    fun showSaveTemplateDialog() {
+        _state.value = _state.value.copy(showSaveTemplateDialog = true)
+    }
+
+    fun dismissSaveTemplateDialog() {
+        _state.value = _state.value.copy(showSaveTemplateDialog = false)
+    }
+
+    fun startFromTemplate(exerciseIds: List<Pair<String, String>>) {
+        exerciseIds.forEach { (exerciseId, _) -> addExercise(exerciseId) }
     }
 
     fun discard() {

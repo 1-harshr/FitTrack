@@ -1,0 +1,33 @@
+CREATE TABLE WorkoutTemplateEntity (
+    id        TEXT    NOT NULL PRIMARY KEY,
+    name      TEXT    NOT NULL,
+    createdAt INTEGER NOT NULL
+);
+
+CREATE TABLE TemplateExerciseEntity (
+    id           TEXT    NOT NULL PRIMARY KEY,
+    templateId   TEXT    NOT NULL REFERENCES WorkoutTemplateEntity(id) ON DELETE CASCADE,
+    exerciseId   TEXT    NOT NULL,
+    exerciseName TEXT    NOT NULL,
+    orderIndex   INTEGER NOT NULL
+);
+
+insertTemplate:
+INSERT OR REPLACE INTO WorkoutTemplateEntity(id, name, createdAt)
+VALUES (?, ?, ?);
+
+insertTemplateExercise:
+INSERT INTO TemplateExerciseEntity(id, templateId, exerciseId, exerciseName, orderIndex)
+VALUES (?, ?, ?, ?, ?);
+
+deleteTemplate:
+DELETE FROM WorkoutTemplateEntity WHERE id = ?;
+
+deleteTemplateExercises:
+DELETE FROM TemplateExerciseEntity WHERE templateId = ?;
+
+selectAllTemplates:
+SELECT * FROM WorkoutTemplateEntity ORDER BY createdAt DESC;
+
+selectExercisesForTemplate:
+SELECT * FROM TemplateExerciseEntity WHERE templateId = ? ORDER BY orderIndex;
