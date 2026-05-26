@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlin.time.Clock
 import kotlin.random.Random
 
 class TemplateRepositoryImpl(
@@ -46,7 +47,7 @@ class TemplateRepositoryImpl(
     override suspend fun createTemplate(name: String, exercises: List<TemplateExercise>): WorkoutTemplate =
         withContext(io) {
             val id = newId()
-            val now = System.currentTimeMillis()
+            val now = Clock.System.now().toEpochMilliseconds()
             db.transaction {
                 tQ.insertTemplate(id = id, name = name, createdAt = now)
                 exercises.forEachIndexed { index, ex ->
